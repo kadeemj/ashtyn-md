@@ -2,7 +2,7 @@
 
 **Date:** 2026-07-30
 **State:** All 6 phases complete and verified. `script/release.sh` produces a signed, **notarized**, stapled universal `.dmg` end-to-end; the first notarized build shipped 2026-07-30 (both submissions `Accepted`, Gatekeeper: `Notarized Developer ID`).
-**Repo:** `/Users/kadeem/Development/ashtyn_md` — git initialized, **no commits yet** (nothing was ever committed; make an initial commit first thing if you want history).
+**Repo:** `/Users/kadeem/Development/ashtyn_md`, branch `main` — all six phases merged (phase-6 fast-forwarded 2026-07-30). No remote is configured; `git push` needs one added first.
 
 ## What this is
 
@@ -18,7 +18,9 @@ xcodebuild -project AshtynMD.xcodeproj -scheme AshtynMD -configuration Debug tes
 ```
 
 - **`project.yml` is the source of truth** — never edit the `.xcodeproj` directly, and **rerun `xcodegen generate` after adding/removing source files** (forgetting this causes "cannot find X in scope" errors for new files).
-- Tests: **149 tests in 20 suites, all passing** (Swift Testing, hosted in the app). Suite runs in ~3 s.
+- Tests: **167 unit tests in 23 suites** (Swift Testing, hosted in the app; ~4 s) plus **15 XCUITests in 4 suites** (~130 s). All passing.
+- Release-script tests are separate shell scripts: `zsh script/tests/release_{lib,config,signing}_test.sh`.
+- Performance gates are opt-in: `script/performance_gate.sh` (sets `ASHTYN_PERFORMANCE_TESTS=1`).
 - Toolchain verified: Xcode 26.6, Swift 6.3.3, Apple silicon.
 - Local dev signing is ad-hoc (`CODE_SIGN_IDENTITY: "-"`, manual style). Hardened Runtime is enabled for Release config only.
 - App Sandbox is ON with user-selected read-write + security-scoped bookmarks.
@@ -55,7 +57,7 @@ AshtynMD/
                  (OpenAI Responses / Anthropic Messages / Ollama chat, all streaming),
                  AISettings (no secrets), AICompletionController (ghost text lifecycle),
     Settings/    SettingsView (Editor tab: profiles/themes), AISettingsView (keys, models, consent)
-  Tests/         149 tests: format/save/recovery/session-conflicts, store/indexer (incl. 1,500-file
+  Tests/         167 tests: format/save/recovery/session-conflicts, store/indexer (incl. 1,500-file
                  perf test w/ <200 ms search), highlighter fixtures for all 10 grammars,
                  editor commands, markdown renderer/task fixtures, SSE/provider mapping,
                  controller-with-mock-provider, Keychain no-leak
@@ -68,7 +70,7 @@ project.yml      XcodeGen manifest (packages pinned here; Package.resolved pins 
 | Phase | Status | Exit-gate evidence |
 |---|---|---|
 | 1. Shell + document core | ✅ | Open/edit/autosave (700 ms)/recover (2 s snapshots) tested; Finder open smoke-tested; encoding/BOM/CRLF byte-exact round-trips tested |
-| 2. Library + search | ✅ | SQLite schema v1 + FTS5 + FSEvents; tabs/recents/favorites/trash/drag-move; state restore; 1,500-file scan + <200 ms search test (10k claim extrapolated, not yet formally profiled) |
+| 2. Library + search | ✅ | SQLite schema v1 + FTS5 + FSEvents; tabs/recents/favorites/trash/drag-move; state restore; 1,500-file scan + <200 ms search test, plus `PerformanceGateTests` for the 10k-file target |
 | 3. Editor + languages | ✅ | All 10 grammars load + per-language highlight fixtures; incremental edits w/ emoji ranges; every line command tested incl. boundaries; pairing/skip-over; ⌘L/⇧⌘D/⇧⌘K/⌥⌘↑↓/⌘//⌃Space wired; profiles+themes+settings UI; language override menu |
 | 4. Markdown preview | ✅ | GFM fixtures (tables w/ alignment, tasks, strikethrough, autolinks); raw HTML escaped by default w/ per-library opt-in (View menu); remote images blocked; task checkbox → undoable source edit; Assets image paste/drop w/ relative links; per-file mode + scroll persistence; 250 ms debounced re-render |
 | 5. AI completion | ✅ | Three streaming adapters + model discovery + connection test; Keychain-only keys (no-leak test); one-time cloud consent dialog; ghost text (Tab accept / Esc dismiss, never auto-inserted); 800 ms auto-trigger off by default; provider in status bar; mock-provider tests for streamed/cancelled/failed/accepted |
