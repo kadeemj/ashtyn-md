@@ -1,0 +1,932 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0B52119D66B54A8BF44B870A /* TreeSitterSwift in Frameworks */ = {isa = PBXBuildFile; productRef = E72AC3A4E6D30544C1284B25 /* TreeSitterSwift */; };
+		1B73F58B3EC05D1DEEA069B8 /* AICompletionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 733F95269F57D7A91ECBAF43 /* AICompletionTests.swift */; };
+		2432ED2781D5899374403D52 /* TreeSitterTypeScript in Frameworks */ = {isa = PBXBuildFile; productRef = 68801BDE668000222A463A72 /* TreeSitterTypeScript */; };
+		245A1B192C60F2FA7EC5E143 /* LibraryIndexer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3506FABB182E82FDDB01F65B /* LibraryIndexer.swift */; };
+		2476C44464F855456436359D /* GrammarRegistry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5424E075E33393BE32DFC0C4 /* GrammarRegistry.swift */; };
+		28F1A682E682AA53CB950A3D /* SessionRegistry.swift in Sources */ = {isa = PBXBuildFile; fileRef = F21B8F916CF2C4CF1F91445F /* SessionRegistry.swift */; };
+		2BC14522F0F6AE7A4C20FC89 /* TreeSitterHTML in Frameworks */ = {isa = PBXBuildFile; productRef = 654C54075C4172A4D3155F83 /* TreeSitterHTML */; };
+		2CAFFB0A4F14E97FCFBC9F50 /* LineNumberRulerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82ED3B99B30E2D894D7E0C9F /* LineNumberRulerView.swift */; };
+		32B17B58FBABB5B226B3B77B /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABA6E99C6AFC7744EB7FFF42 /* AppModel.swift */; };
+		3422817420CB065F64500674 /* TextFileFormat.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B60F7D6E6883734811B50DC /* TextFileFormat.swift */; };
+		3FD68E9FC0A82BE34BD41B4D /* EditorTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F44C9EEFCD9187A9591895E5 /* EditorTextView.swift */; };
+		4094DD89FAB2C83F5FAADE77 /* TreeSitterPython in Frameworks */ = {isa = PBXBuildFile; productRef = 3ED607D3A3DF1E275E5C6429 /* TreeSitterPython */; };
+		41E193F6EF3B641D3D3A7F93 /* PlainTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D870C3B4BC666838194053F8 /* PlainTextView.swift */; };
+		499C6F9E3799A5FD1F98E8E9 /* EditorContainerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54BF539E9CD4D2C6F2A35C72 /* EditorContainerView.swift */; };
+		5248C43930DC08C6187266B1 /* MarkdownPreviewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01495A66537ECC1A765A7F7F /* MarkdownPreviewTests.swift */; };
+		534201D6C714BB946DFE4E06 /* AppSupportPaths.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60F4F49FD4CFD3B0E283D371 /* AppSupportPaths.swift */; };
+		56C48D03AD28BF11D957CE28 /* AssetStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00BD459BFB5D933D1A417152 /* AssetStore.swift */; };
+		59F06351635771FCA1341FF9 /* AISettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = D891E3F0EE2CBFBE9978ACE0 /* AISettings.swift */; };
+		5A61DFDD3A7A120D9CE0E6A1 /* LibraryIndexerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 456B2C18228682CCD5E655DE /* LibraryIndexerTests.swift */; };
+		5ADB895E3C610D0A977C806A /* AICompletionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7715BAA7DA02249157FE5DE2 /* AICompletionController.swift */; };
+		6562D4A2F7E91DDB73F36A4D /* TextFileFormatTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAE67930502B978E6210A88F /* TextFileFormatTests.swift */; };
+		69D74430B33982A311516D47 /* CredentialStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F2930B219F864008E08F3DB /* CredentialStore.swift */; };
+		6EF10BBA141CEC7B45F9CC76 /* LibraryStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5590B6642ADC4ED3CE584A48 /* LibraryStoreTests.swift */; };
+		7D43DEA4F728963FBADBDBA4 /* StreamDecoders.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8818AB68670549F2F752E40E /* StreamDecoders.swift */; };
+		7DB8C0D3F31667295CB0F826 /* MarkdownPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 839F849ED7BAFE00EDE7DAD1 /* MarkdownPreviewView.swift */; };
+		7FB6ADA51DBB8B302F529E5E /* StandaloneDocumentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA1929030E9457BC8F32A8E7 /* StandaloneDocumentView.swift */; };
+		8060DEFA777AF20C658325AE /* EditorProfilesStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E455314ABCED8C7F2D25E57 /* EditorProfilesStore.swift */; };
+		851AF1F95F213C31B5F4DE0C /* EditorProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4815ED10DD40A08F8E9CEB9 /* EditorProfile.swift */; };
+		856587FDF517707E598BC0DD /* SaveAndRecoveryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 364EFB5BDF182BF99381ACA0 /* SaveAndRecoveryTests.swift */; };
+		8718CD17A5F06CC087563804 /* SQLiteDatabase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 760BE63F9EA5CB2814CB4A91 /* SQLiteDatabase.swift */; };
+		8AEBF4AF2EFAEE45E3115CD3 /* SwiftTreeSitter in Frameworks */ = {isa = PBXBuildFile; productRef = AD2F2121824DFF57334813B4 /* SwiftTreeSitter */; };
+		8E4E0485F3C3492A63141ACA /* AshtynMDApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2ACCFD95DB2B254B727EBE8 /* AshtynMDApp.swift */; };
+		91A63844012F199CD08A30EA /* LibraryBrowser.swift in Sources */ = {isa = PBXBuildFile; fileRef = E55A6BE2EBB31C7B0404CF4A /* LibraryBrowser.swift */; };
+		945377704F5D830024D81AFE /* TreeSitterJavaScript in Frameworks */ = {isa = PBXBuildFile; productRef = 5A97EC5E393EA662FC286D1A /* TreeSitterJavaScript */; };
+		9AA575D97D7B12F187048B32 /* DocumentSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA36B4EA3A9EA2F819C57943 /* DocumentSession.swift */; };
+		9C2E43BBA52BE7C55A5D34CF /* LanguageDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B403CB2F3E6F9D22A98D03E /* LanguageDetector.swift */; };
+		A24F0D1BDF18768B33C2605C /* TreeSitterBash in Frameworks */ = {isa = PBXBuildFile; productRef = 4FDD9AC28CC6E2BAA08C9CF6 /* TreeSitterBash */; };
+		A5516A50872965C2553B8373 /* FSEventsWatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67FA98C9A5C8B875782A3EE8 /* FSEventsWatcher.swift */; };
+		A5E8B74161F70FF8C2BEBE9F /* EditorTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F63655972D479977924785A /* EditorTheme.swift */; };
+		AEC74EA229A4EB796AEBDF5D /* LanguageID.swift in Sources */ = {isa = PBXBuildFile; fileRef = B297CCE30D2A8CCE14AC0688 /* LanguageID.swift */; };
+		BB3C823A8D86CB49F5347A2A /* RecoveryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32C6587A1E2A8A80E7BEDCF1 /* RecoveryStore.swift */; };
+		C4F310FDAD57675A84E7DAA9 /* LibraryBookmarkStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C99B5341ED308057D4086A9 /* LibraryBookmarkStore.swift */; };
+		C552857286B52A4251D5CD46 /* OfflineCompletion.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6266037D8843109C94ADCCA /* OfflineCompletion.swift */; };
+		CB0D1D9FE65EA823DD71B4F6 /* MarkdownTasks.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B977299796AFDF7F3E8961E /* MarkdownTasks.swift */; };
+		CBBEA7728106E601F8278C6B /* FileOperations.swift in Sources */ = {isa = PBXBuildFile; fileRef = F28530459CD463B7D9AF8BA2 /* FileOperations.swift */; };
+		CBFE8C14A8A0BA3D67E55130 /* AISettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44CAFA2D78894874DA7ECDC5 /* AISettingsView.swift */; };
+		D2620C2F912CC3F5CE37112D /* LibraryWindowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D35B95DB9DFE9B27041616FC /* LibraryWindowView.swift */; };
+		D5E5FEC983EC1394E49F1BC3 /* AIProviders.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BBCE78A93CA4FDB25F633D3 /* AIProviders.swift */; };
+		D8B194D5265E0FC18E3BA82D /* SaveCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF489F4E6513E674867FF38F /* SaveCoordinator.swift */; };
+		DB492CDB1A2F4D94495A0FDF /* PreviewAssetSchemeHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC1CF92712ED0726AC3EC720 /* PreviewAssetSchemeHandler.swift */; };
+		DBEB825C2D395CAD52BF57DD /* EditorCommandTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8ADAC5315AE133F4A6D70B29 /* EditorCommandTests.swift */; };
+		DF3936570F1970C37B199A1B /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DEB8E5D6E07BCA1C3593E6C2 /* SettingsView.swift */; };
+		E01AFA7DEBEB4546B2657013 /* MarkdownHTMLRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = E93B30A723C8FFF033FFE2B1 /* MarkdownHTMLRenderer.swift */; };
+		E691E2E40747F5970717D1A6 /* LibraryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9262B9E3668489DF8951358E /* LibraryStore.swift */; };
+		E86C9791708747D6081AC9D9 /* SyntaxHighlighter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1446ECBB1DACD32665D0D99B /* SyntaxHighlighter.swift */; };
+		E8925A2880FE2300E451E0A1 /* AITypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20A925195E28F3C0085315E8 /* AITypes.swift */; };
+		E9A50D13E4A745BA134FE469 /* TreeSitterMarkdown in Frameworks */ = {isa = PBXBuildFile; productRef = 2EDC32B6911307F6E40D11D6 /* TreeSitterMarkdown */; };
+		EE6A4E7DC4BE8D59C3D8B087 /* SyntaxHighlighterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 533591F6131E50A3279F68B8 /* SyntaxHighlighterTests.swift */; };
+		F08E87956B1E0D174B401893 /* TreeSitterCSS in Frameworks */ = {isa = PBXBuildFile; productRef = B2660AEEE89FE69E6B94B8AF /* TreeSitterCSS */; };
+		F3D480DCDA53AB4A2C27C751 /* TreeSitterJSON in Frameworks */ = {isa = PBXBuildFile; productRef = 42C63D7189E5896B51122772 /* TreeSitterJSON */; };
+		F84B54E384E9A4A1EE5FF0F2 /* LanguageDetectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21CE92566F3F737F0D900C13 /* LanguageDetectionTests.swift */; };
+		FC407A0D25C437DCD2F710A8 /* Markdown in Frameworks */ = {isa = PBXBuildFile; productRef = C565BCE8E982F54EBE83C10B /* Markdown */; };
+		FC53786C7590C76D18766979 /* TreeSitterYAML in Frameworks */ = {isa = PBXBuildFile; productRef = 666517D6D4EE08B9E5F30B4F /* TreeSitterYAML */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		5E0522B8FB16D1E409946E81 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 4B526AEFCFA719E3AE5D64FC /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 10882F30F80DC72D0929A44C;
+			remoteInfo = AshtynMD;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		00BD459BFB5D933D1A417152 /* AssetStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssetStore.swift; sourceTree = "<group>"; };
+		01495A66537ECC1A765A7F7F /* MarkdownPreviewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownPreviewTests.swift; sourceTree = "<group>"; };
+		1446ECBB1DACD32665D0D99B /* SyntaxHighlighter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyntaxHighlighter.swift; sourceTree = "<group>"; };
+		150E8E060DA81D219228B16C /* tree-sitter-yaml */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "tree-sitter-yaml"; path = "Vendor/tree-sitter-yaml"; sourceTree = SOURCE_ROOT; };
+		1F63655972D479977924785A /* EditorTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorTheme.swift; sourceTree = "<group>"; };
+		20A925195E28F3C0085315E8 /* AITypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AITypes.swift; sourceTree = "<group>"; };
+		21CE92566F3F737F0D900C13 /* LanguageDetectionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LanguageDetectionTests.swift; sourceTree = "<group>"; };
+		2B977299796AFDF7F3E8961E /* MarkdownTasks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownTasks.swift; sourceTree = "<group>"; };
+		32C6587A1E2A8A80E7BEDCF1 /* RecoveryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecoveryStore.swift; sourceTree = "<group>"; };
+		3506FABB182E82FDDB01F65B /* LibraryIndexer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryIndexer.swift; sourceTree = "<group>"; };
+		364EFB5BDF182BF99381ACA0 /* SaveAndRecoveryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SaveAndRecoveryTests.swift; sourceTree = "<group>"; };
+		4213216BE1E7467A2F23F481 /* tree-sitter-python */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "tree-sitter-python"; path = "Vendor/tree-sitter-python"; sourceTree = SOURCE_ROOT; };
+		44CAFA2D78894874DA7ECDC5 /* AISettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AISettingsView.swift; sourceTree = "<group>"; };
+		456B2C18228682CCD5E655DE /* LibraryIndexerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryIndexerTests.swift; sourceTree = "<group>"; };
+		4C99B5341ED308057D4086A9 /* LibraryBookmarkStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryBookmarkStore.swift; sourceTree = "<group>"; };
+		513E0592281DF5654378BE76 /* AshtynMDTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AshtynMDTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		533591F6131E50A3279F68B8 /* SyntaxHighlighterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyntaxHighlighterTests.swift; sourceTree = "<group>"; };
+		5424E075E33393BE32DFC0C4 /* GrammarRegistry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrammarRegistry.swift; sourceTree = "<group>"; };
+		54BF539E9CD4D2C6F2A35C72 /* EditorContainerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorContainerView.swift; sourceTree = "<group>"; };
+		5590B6642ADC4ED3CE584A48 /* LibraryStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryStoreTests.swift; sourceTree = "<group>"; };
+		5B403CB2F3E6F9D22A98D03E /* LanguageDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LanguageDetector.swift; sourceTree = "<group>"; };
+		5E455314ABCED8C7F2D25E57 /* EditorProfilesStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorProfilesStore.swift; sourceTree = "<group>"; };
+		60F4F49FD4CFD3B0E283D371 /* AppSupportPaths.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSupportPaths.swift; sourceTree = "<group>"; };
+		67FA98C9A5C8B875782A3EE8 /* FSEventsWatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FSEventsWatcher.swift; sourceTree = "<group>"; };
+		6BBCE78A93CA4FDB25F633D3 /* AIProviders.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIProviders.swift; sourceTree = "<group>"; };
+		6D6109DB5413335505A9D25C /* tree-sitter-javascript */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "tree-sitter-javascript"; path = "Vendor/tree-sitter-javascript"; sourceTree = SOURCE_ROOT; };
+		733F95269F57D7A91ECBAF43 /* AICompletionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AICompletionTests.swift; sourceTree = "<group>"; };
+		760BE63F9EA5CB2814CB4A91 /* SQLiteDatabase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SQLiteDatabase.swift; sourceTree = "<group>"; };
+		7715BAA7DA02249157FE5DE2 /* AICompletionController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AICompletionController.swift; sourceTree = "<group>"; };
+		82ED3B99B30E2D894D7E0C9F /* LineNumberRulerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LineNumberRulerView.swift; sourceTree = "<group>"; };
+		839F849ED7BAFE00EDE7DAD1 /* MarkdownPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownPreviewView.swift; sourceTree = "<group>"; };
+		8818AB68670549F2F752E40E /* StreamDecoders.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamDecoders.swift; sourceTree = "<group>"; };
+		8ADAC5315AE133F4A6D70B29 /* EditorCommandTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorCommandTests.swift; sourceTree = "<group>"; };
+		8B60F7D6E6883734811B50DC /* TextFileFormat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextFileFormat.swift; sourceTree = "<group>"; };
+		9262B9E3668489DF8951358E /* LibraryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryStore.swift; sourceTree = "<group>"; };
+		9F2930B219F864008E08F3DB /* CredentialStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CredentialStore.swift; sourceTree = "<group>"; };
+		A2ACCFD95DB2B254B727EBE8 /* AshtynMDApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AshtynMDApp.swift; sourceTree = "<group>"; };
+		AAE67930502B978E6210A88F /* TextFileFormatTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextFileFormatTests.swift; sourceTree = "<group>"; };
+		ABA6E99C6AFC7744EB7FFF42 /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
+		AC1CF92712ED0726AC3EC720 /* PreviewAssetSchemeHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewAssetSchemeHandler.swift; sourceTree = "<group>"; };
+		B297CCE30D2A8CCE14AC0688 /* LanguageID.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LanguageID.swift; sourceTree = "<group>"; };
+		B6266037D8843109C94ADCCA /* OfflineCompletion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OfflineCompletion.swift; sourceTree = "<group>"; };
+		BA36B4EA3A9EA2F819C57943 /* DocumentSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentSession.swift; sourceTree = "<group>"; };
+		BA798B24DCC3B8F670E88F41 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		C70FC880289D4AA4EDD1CCAF /* AshtynMD.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = AshtynMD.entitlements; sourceTree = "<group>"; };
+		D35B95DB9DFE9B27041616FC /* LibraryWindowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryWindowView.swift; sourceTree = "<group>"; };
+		D4815ED10DD40A08F8E9CEB9 /* EditorProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorProfile.swift; sourceTree = "<group>"; };
+		D7A3710297CE40D51130915A /* tree-sitter-css */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "tree-sitter-css"; path = "Vendor/tree-sitter-css"; sourceTree = SOURCE_ROOT; };
+		D870C3B4BC666838194053F8 /* PlainTextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlainTextView.swift; sourceTree = "<group>"; };
+		D891E3F0EE2CBFBE9978ACE0 /* AISettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AISettings.swift; sourceTree = "<group>"; };
+		DEB8E5D6E07BCA1C3593E6C2 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		DF489F4E6513E674867FF38F /* SaveCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SaveCoordinator.swift; sourceTree = "<group>"; };
+		E55A6BE2EBB31C7B0404CF4A /* LibraryBrowser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryBrowser.swift; sourceTree = "<group>"; };
+		E93B30A723C8FFF033FFE2B1 /* MarkdownHTMLRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownHTMLRenderer.swift; sourceTree = "<group>"; };
+		E9F50D727E50BB3A9882B040 /* AshtynMD.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AshtynMD.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		EA1929030E9457BC8F32A8E7 /* StandaloneDocumentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StandaloneDocumentView.swift; sourceTree = "<group>"; };
+		F21B8F916CF2C4CF1F91445F /* SessionRegistry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionRegistry.swift; sourceTree = "<group>"; };
+		F28530459CD463B7D9AF8BA2 /* FileOperations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileOperations.swift; sourceTree = "<group>"; };
+		F44C9EEFCD9187A9591895E5 /* EditorTextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorTextView.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		DFBE61CDD879FE5786194761 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FC407A0D25C437DCD2F710A8 /* Markdown in Frameworks */,
+				8AEBF4AF2EFAEE45E3115CD3 /* SwiftTreeSitter in Frameworks */,
+				0B52119D66B54A8BF44B870A /* TreeSitterSwift in Frameworks */,
+				4094DD89FAB2C83F5FAADE77 /* TreeSitterPython in Frameworks */,
+				945377704F5D830024D81AFE /* TreeSitterJavaScript in Frameworks */,
+				2432ED2781D5899374403D52 /* TreeSitterTypeScript in Frameworks */,
+				F3D480DCDA53AB4A2C27C751 /* TreeSitterJSON in Frameworks */,
+				FC53786C7590C76D18766979 /* TreeSitterYAML in Frameworks */,
+				2BC14522F0F6AE7A4C20FC89 /* TreeSitterHTML in Frameworks */,
+				F08E87956B1E0D174B401893 /* TreeSitterCSS in Frameworks */,
+				A24F0D1BDF18768B33C2605C /* TreeSitterBash in Frameworks */,
+				E9A50D13E4A745BA134FE469 /* TreeSitterMarkdown in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		0718C58C0A381BB3CF3C5757 /* AICompletion */ = {
+			isa = PBXGroup;
+			children = (
+				7715BAA7DA02249157FE5DE2 /* AICompletionController.swift */,
+				6BBCE78A93CA4FDB25F633D3 /* AIProviders.swift */,
+				D891E3F0EE2CBFBE9978ACE0 /* AISettings.swift */,
+				20A925195E28F3C0085315E8 /* AITypes.swift */,
+				8818AB68670549F2F752E40E /* StreamDecoders.swift */,
+			);
+			path = AICompletion;
+			sourceTree = "<group>";
+		};
+		1C9604682AC3E58FA3090AEE /* FileSystem */ = {
+			isa = PBXGroup;
+			children = (
+				60F4F49FD4CFD3B0E283D371 /* AppSupportPaths.swift */,
+				F28530459CD463B7D9AF8BA2 /* FileOperations.swift */,
+				67FA98C9A5C8B875782A3EE8 /* FSEventsWatcher.swift */,
+				4C99B5341ED308057D4086A9 /* LibraryBookmarkStore.swift */,
+			);
+			path = FileSystem;
+			sourceTree = "<group>";
+		};
+		1D6670A546DBC663F4969979 /* AshtynMD */ = {
+			isa = PBXGroup;
+			children = (
+				F1980CEF082C29FC857EEE3D /* App */,
+				B9B1614FE0AA4CDB520C2C8B /* Core */,
+				FE169E8A20C0AD10F5A89C4E /* Features */,
+				3834B6A9E90E75ACB706F03B /* Tests */,
+			);
+			path = AshtynMD;
+			sourceTree = "<group>";
+		};
+		31B799FDC290C4D92853C1EB /* Library */ = {
+			isa = PBXGroup;
+			children = (
+				ABA6E99C6AFC7744EB7FFF42 /* AppModel.swift */,
+				E55A6BE2EBB31C7B0404CF4A /* LibraryBrowser.swift */,
+				D35B95DB9DFE9B27041616FC /* LibraryWindowView.swift */,
+				EA1929030E9457BC8F32A8E7 /* StandaloneDocumentView.swift */,
+			);
+			path = Library;
+			sourceTree = "<group>";
+		};
+		3834B6A9E90E75ACB706F03B /* Tests */ = {
+			isa = PBXGroup;
+			children = (
+				733F95269F57D7A91ECBAF43 /* AICompletionTests.swift */,
+				8ADAC5315AE133F4A6D70B29 /* EditorCommandTests.swift */,
+				21CE92566F3F737F0D900C13 /* LanguageDetectionTests.swift */,
+				456B2C18228682CCD5E655DE /* LibraryIndexerTests.swift */,
+				5590B6642ADC4ED3CE584A48 /* LibraryStoreTests.swift */,
+				01495A66537ECC1A765A7F7F /* MarkdownPreviewTests.swift */,
+				364EFB5BDF182BF99381ACA0 /* SaveAndRecoveryTests.swift */,
+				533591F6131E50A3279F68B8 /* SyntaxHighlighterTests.swift */,
+				AAE67930502B978E6210A88F /* TextFileFormatTests.swift */,
+			);
+			path = Tests;
+			sourceTree = "<group>";
+		};
+		3A88460CC4DAF71F0F31554A /* Packages */ = {
+			isa = PBXGroup;
+			children = (
+				D7A3710297CE40D51130915A /* tree-sitter-css */,
+				6D6109DB5413335505A9D25C /* tree-sitter-javascript */,
+				4213216BE1E7467A2F23F481 /* tree-sitter-python */,
+				150E8E060DA81D219228B16C /* tree-sitter-yaml */,
+			);
+			name = Packages;
+			sourceTree = "<group>";
+		};
+		406CF66C915B68AE208F383C /* Documents */ = {
+			isa = PBXGroup;
+			children = (
+				BA36B4EA3A9EA2F819C57943 /* DocumentSession.swift */,
+				32C6587A1E2A8A80E7BEDCF1 /* RecoveryStore.swift */,
+				DF489F4E6513E674867FF38F /* SaveCoordinator.swift */,
+				F21B8F916CF2C4CF1F91445F /* SessionRegistry.swift */,
+				8B60F7D6E6883734811B50DC /* TextFileFormat.swift */,
+			);
+			path = Documents;
+			sourceTree = "<group>";
+		};
+		586EE5009C1CA04C04428E03 = {
+			isa = PBXGroup;
+			children = (
+				1D6670A546DBC663F4969979 /* AshtynMD */,
+				3A88460CC4DAF71F0F31554A /* Packages */,
+				AEC8F9BBC4FABF68E0FBA3C2 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		6D7158787B08672B0FC88297 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				44CAFA2D78894874DA7ECDC5 /* AISettingsView.swift */,
+				DEB8E5D6E07BCA1C3593E6C2 /* SettingsView.swift */,
+			);
+			path = Settings;
+			sourceTree = "<group>";
+		};
+		72793DBAF30B49A7E0CC336F /* MarkdownPreview */ = {
+			isa = PBXGroup;
+			children = (
+				00BD459BFB5D933D1A417152 /* AssetStore.swift */,
+				E93B30A723C8FFF033FFE2B1 /* MarkdownHTMLRenderer.swift */,
+				839F849ED7BAFE00EDE7DAD1 /* MarkdownPreviewView.swift */,
+				2B977299796AFDF7F3E8961E /* MarkdownTasks.swift */,
+				AC1CF92712ED0726AC3EC720 /* PreviewAssetSchemeHandler.swift */,
+			);
+			path = MarkdownPreview;
+			sourceTree = "<group>";
+		};
+		799809FD58110FE24B49601B /* Editor */ = {
+			isa = PBXGroup;
+			children = (
+				54BF539E9CD4D2C6F2A35C72 /* EditorContainerView.swift */,
+				F44C9EEFCD9187A9591895E5 /* EditorTextView.swift */,
+				82ED3B99B30E2D894D7E0C9F /* LineNumberRulerView.swift */,
+				B6266037D8843109C94ADCCA /* OfflineCompletion.swift */,
+				D870C3B4BC666838194053F8 /* PlainTextView.swift */,
+			);
+			path = Editor;
+			sourceTree = "<group>";
+		};
+		825DDD429D3F20EBCCBF7C83 /* Languages */ = {
+			isa = PBXGroup;
+			children = (
+				5424E075E33393BE32DFC0C4 /* GrammarRegistry.swift */,
+				5B403CB2F3E6F9D22A98D03E /* LanguageDetector.swift */,
+				B297CCE30D2A8CCE14AC0688 /* LanguageID.swift */,
+				1446ECBB1DACD32665D0D99B /* SyntaxHighlighter.swift */,
+			);
+			path = Languages;
+			sourceTree = "<group>";
+		};
+		9C4B68EE4B55879B38B8B3C8 /* Themes */ = {
+			isa = PBXGroup;
+			children = (
+				D4815ED10DD40A08F8E9CEB9 /* EditorProfile.swift */,
+				5E455314ABCED8C7F2D25E57 /* EditorProfilesStore.swift */,
+				1F63655972D479977924785A /* EditorTheme.swift */,
+			);
+			path = Themes;
+			sourceTree = "<group>";
+		};
+		AEC8F9BBC4FABF68E0FBA3C2 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				E9F50D727E50BB3A9882B040 /* AshtynMD.app */,
+				513E0592281DF5654378BE76 /* AshtynMDTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		B9B1614FE0AA4CDB520C2C8B /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				406CF66C915B68AE208F383C /* Documents */,
+				1C9604682AC3E58FA3090AEE /* FileSystem */,
+				EF2E7FCDE23722792CD034B4 /* Indexing */,
+				825DDD429D3F20EBCCBF7C83 /* Languages */,
+				F2AD2829560DF67C7F1A6274 /* Security */,
+				9C4B68EE4B55879B38B8B3C8 /* Themes */,
+			);
+			path = Core;
+			sourceTree = "<group>";
+		};
+		EF2E7FCDE23722792CD034B4 /* Indexing */ = {
+			isa = PBXGroup;
+			children = (
+				3506FABB182E82FDDB01F65B /* LibraryIndexer.swift */,
+				9262B9E3668489DF8951358E /* LibraryStore.swift */,
+				760BE63F9EA5CB2814CB4A91 /* SQLiteDatabase.swift */,
+			);
+			path = Indexing;
+			sourceTree = "<group>";
+		};
+		F1980CEF082C29FC857EEE3D /* App */ = {
+			isa = PBXGroup;
+			children = (
+				C70FC880289D4AA4EDD1CCAF /* AshtynMD.entitlements */,
+				A2ACCFD95DB2B254B727EBE8 /* AshtynMDApp.swift */,
+				BA798B24DCC3B8F670E88F41 /* Info.plist */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		F2AD2829560DF67C7F1A6274 /* Security */ = {
+			isa = PBXGroup;
+			children = (
+				9F2930B219F864008E08F3DB /* CredentialStore.swift */,
+			);
+			path = Security;
+			sourceTree = "<group>";
+		};
+		FE169E8A20C0AD10F5A89C4E /* Features */ = {
+			isa = PBXGroup;
+			children = (
+				0718C58C0A381BB3CF3C5757 /* AICompletion */,
+				799809FD58110FE24B49601B /* Editor */,
+				31B799FDC290C4D92853C1EB /* Library */,
+				72793DBAF30B49A7E0CC336F /* MarkdownPreview */,
+				6D7158787B08672B0FC88297 /* Settings */,
+			);
+			path = Features;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		10882F30F80DC72D0929A44C /* AshtynMD */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 3BFB588DCD46C9EF45E11150 /* Build configuration list for PBXNativeTarget "AshtynMD" */;
+			buildPhases = (
+				6C63310DC9A6D3C3635B6E52 /* Sources */,
+				DFBE61CDD879FE5786194761 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = AshtynMD;
+			packageProductDependencies = (
+				C565BCE8E982F54EBE83C10B /* Markdown */,
+				AD2F2121824DFF57334813B4 /* SwiftTreeSitter */,
+				E72AC3A4E6D30544C1284B25 /* TreeSitterSwift */,
+				3ED607D3A3DF1E275E5C6429 /* TreeSitterPython */,
+				5A97EC5E393EA662FC286D1A /* TreeSitterJavaScript */,
+				68801BDE668000222A463A72 /* TreeSitterTypeScript */,
+				42C63D7189E5896B51122772 /* TreeSitterJSON */,
+				666517D6D4EE08B9E5F30B4F /* TreeSitterYAML */,
+				654C54075C4172A4D3155F83 /* TreeSitterHTML */,
+				B2660AEEE89FE69E6B94B8AF /* TreeSitterCSS */,
+				4FDD9AC28CC6E2BAA08C9CF6 /* TreeSitterBash */,
+				2EDC32B6911307F6E40D11D6 /* TreeSitterMarkdown */,
+			);
+			productName = AshtynMD;
+			productReference = E9F50D727E50BB3A9882B040 /* AshtynMD.app */;
+			productType = "com.apple.product-type.application";
+		};
+		132CECED6F6DBA0A40322A93 /* AshtynMDTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 999540DF522938530D13D1D7 /* Build configuration list for PBXNativeTarget "AshtynMDTests" */;
+			buildPhases = (
+				C829936D6C39DAAC96A654A9 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				7475150B1D60F37343755F94 /* PBXTargetDependency */,
+			);
+			name = AshtynMDTests;
+			packageProductDependencies = (
+			);
+			productName = AshtynMDTests;
+			productReference = 513E0592281DF5654378BE76 /* AshtynMDTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		4B526AEFCFA719E3AE5D64FC /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					10882F30F80DC72D0929A44C = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Manual;
+					};
+					132CECED6F6DBA0A40322A93 = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Manual;
+					};
+				};
+			};
+			buildConfigurationList = C8D27E7FFE6DFDC1F2038B85 /* Build configuration list for PBXProject "AshtynMD" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 586EE5009C1CA04C04428E03;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				20B4FE77435165C5AAFA01F4 /* XCRemoteSwiftPackageReference "swift-tree-sitter" */,
+				FBDAF2D4DAFF7E0AFD0FD37A /* XCRemoteSwiftPackageReference "tree-sitter-bash" */,
+				77B901EEA4C13B1B6D40795C /* XCRemoteSwiftPackageReference "tree-sitter-html" */,
+				64B76938C3BB84275E75D34C /* XCRemoteSwiftPackageReference "tree-sitter-json" */,
+				BCFD7DA00075F6784AECC59E /* XCRemoteSwiftPackageReference "tree-sitter-markdown" */,
+				B6EC752A8A1AED525ABD60C0 /* XCRemoteSwiftPackageReference "tree-sitter-swift" */,
+				A4699A0107F2C52D0858D9B2 /* XCRemoteSwiftPackageReference "tree-sitter-typescript" */,
+				3C3C7689EA99DB00C6C5119F /* XCRemoteSwiftPackageReference "swift-markdown" */,
+				D37EE391A9AD48744BC5880E /* XCLocalSwiftPackageReference "Vendor/tree-sitter-css" */,
+				B233D50A7046E5F693918D86 /* XCLocalSwiftPackageReference "Vendor/tree-sitter-javascript" */,
+				2B7140AE419C5054B9163FA2 /* XCLocalSwiftPackageReference "Vendor/tree-sitter-python" */,
+				E6667F2B06B823F8CE5FEECD /* XCLocalSwiftPackageReference "Vendor/tree-sitter-yaml" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = AEC8F9BBC4FABF68E0FBA3C2 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				10882F30F80DC72D0929A44C /* AshtynMD */,
+				132CECED6F6DBA0A40322A93 /* AshtynMDTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		6C63310DC9A6D3C3635B6E52 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5ADB895E3C610D0A977C806A /* AICompletionController.swift in Sources */,
+				D5E5FEC983EC1394E49F1BC3 /* AIProviders.swift in Sources */,
+				59F06351635771FCA1341FF9 /* AISettings.swift in Sources */,
+				CBFE8C14A8A0BA3D67E55130 /* AISettingsView.swift in Sources */,
+				E8925A2880FE2300E451E0A1 /* AITypes.swift in Sources */,
+				32B17B58FBABB5B226B3B77B /* AppModel.swift in Sources */,
+				534201D6C714BB946DFE4E06 /* AppSupportPaths.swift in Sources */,
+				8E4E0485F3C3492A63141ACA /* AshtynMDApp.swift in Sources */,
+				56C48D03AD28BF11D957CE28 /* AssetStore.swift in Sources */,
+				69D74430B33982A311516D47 /* CredentialStore.swift in Sources */,
+				9AA575D97D7B12F187048B32 /* DocumentSession.swift in Sources */,
+				499C6F9E3799A5FD1F98E8E9 /* EditorContainerView.swift in Sources */,
+				851AF1F95F213C31B5F4DE0C /* EditorProfile.swift in Sources */,
+				8060DEFA777AF20C658325AE /* EditorProfilesStore.swift in Sources */,
+				3FD68E9FC0A82BE34BD41B4D /* EditorTextView.swift in Sources */,
+				A5E8B74161F70FF8C2BEBE9F /* EditorTheme.swift in Sources */,
+				A5516A50872965C2553B8373 /* FSEventsWatcher.swift in Sources */,
+				CBBEA7728106E601F8278C6B /* FileOperations.swift in Sources */,
+				2476C44464F855456436359D /* GrammarRegistry.swift in Sources */,
+				9C2E43BBA52BE7C55A5D34CF /* LanguageDetector.swift in Sources */,
+				AEC74EA229A4EB796AEBDF5D /* LanguageID.swift in Sources */,
+				C4F310FDAD57675A84E7DAA9 /* LibraryBookmarkStore.swift in Sources */,
+				91A63844012F199CD08A30EA /* LibraryBrowser.swift in Sources */,
+				245A1B192C60F2FA7EC5E143 /* LibraryIndexer.swift in Sources */,
+				E691E2E40747F5970717D1A6 /* LibraryStore.swift in Sources */,
+				D2620C2F912CC3F5CE37112D /* LibraryWindowView.swift in Sources */,
+				2CAFFB0A4F14E97FCFBC9F50 /* LineNumberRulerView.swift in Sources */,
+				E01AFA7DEBEB4546B2657013 /* MarkdownHTMLRenderer.swift in Sources */,
+				7DB8C0D3F31667295CB0F826 /* MarkdownPreviewView.swift in Sources */,
+				CB0D1D9FE65EA823DD71B4F6 /* MarkdownTasks.swift in Sources */,
+				C552857286B52A4251D5CD46 /* OfflineCompletion.swift in Sources */,
+				41E193F6EF3B641D3D3A7F93 /* PlainTextView.swift in Sources */,
+				DB492CDB1A2F4D94495A0FDF /* PreviewAssetSchemeHandler.swift in Sources */,
+				BB3C823A8D86CB49F5347A2A /* RecoveryStore.swift in Sources */,
+				8718CD17A5F06CC087563804 /* SQLiteDatabase.swift in Sources */,
+				D8B194D5265E0FC18E3BA82D /* SaveCoordinator.swift in Sources */,
+				28F1A682E682AA53CB950A3D /* SessionRegistry.swift in Sources */,
+				DF3936570F1970C37B199A1B /* SettingsView.swift in Sources */,
+				7FB6ADA51DBB8B302F529E5E /* StandaloneDocumentView.swift in Sources */,
+				7D43DEA4F728963FBADBDBA4 /* StreamDecoders.swift in Sources */,
+				E86C9791708747D6081AC9D9 /* SyntaxHighlighter.swift in Sources */,
+				3422817420CB065F64500674 /* TextFileFormat.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C829936D6C39DAAC96A654A9 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1B73F58B3EC05D1DEEA069B8 /* AICompletionTests.swift in Sources */,
+				DBEB825C2D395CAD52BF57DD /* EditorCommandTests.swift in Sources */,
+				F84B54E384E9A4A1EE5FF0F2 /* LanguageDetectionTests.swift in Sources */,
+				5A61DFDD3A7A120D9CE0E6A1 /* LibraryIndexerTests.swift in Sources */,
+				6EF10BBA141CEC7B45F9CC76 /* LibraryStoreTests.swift in Sources */,
+				5248C43930DC08C6187266B1 /* MarkdownPreviewTests.swift in Sources */,
+				856587FDF517707E598BC0DD /* SaveAndRecoveryTests.swift in Sources */,
+				EE6A4E7DC4BE8D59C3D8B087 /* SyntaxHighlighterTests.swift in Sources */,
+				6562D4A2F7E91DDB73F36A4D /* TextFileFormatTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		7475150B1D60F37343755F94 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 10882F30F80DC72D0929A44C /* AshtynMD */;
+			targetProxy = 5E0522B8FB16D1E409946E81 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		15DEE03380D31159CF1B39E1 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.kadeem.AshtynMDTests;
+				SDKROOT = macosx;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/AshtynMD.app/Contents/MacOS/AshtynMD";
+			};
+			name = Debug;
+		};
+		3F672F2429770AC82B82CFAC /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = "";
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		57816020EF16B496CB58A075 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = AshtynMD/App/AshtynMD.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				INFOPLIST_FILE = AshtynMD/App/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.kadeem.ashtynmd;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		A02704F1626E14560B5FE695 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		DAFCBC295B73AE6EB1438C2B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.kadeem.AshtynMDTests;
+				SDKROOT = macosx;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/AshtynMD.app/Contents/MacOS/AshtynMD";
+			};
+			name = Release;
+		};
+		F9921BBB609EAE7BCB994B8A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = AshtynMD/App/AshtynMD.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				INFOPLIST_FILE = AshtynMD/App/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.kadeem.ashtynmd;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		3BFB588DCD46C9EF45E11150 /* Build configuration list for PBXNativeTarget "AshtynMD" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F9921BBB609EAE7BCB994B8A /* Debug */,
+				57816020EF16B496CB58A075 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		999540DF522938530D13D1D7 /* Build configuration list for PBXNativeTarget "AshtynMDTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				15DEE03380D31159CF1B39E1 /* Debug */,
+				DAFCBC295B73AE6EB1438C2B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		C8D27E7FFE6DFDC1F2038B85 /* Build configuration list for PBXProject "AshtynMD" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A02704F1626E14560B5FE695 /* Debug */,
+				3F672F2429770AC82B82CFAC /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		2B7140AE419C5054B9163FA2 /* XCLocalSwiftPackageReference "Vendor/tree-sitter-python" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = "Vendor/tree-sitter-python";
+		};
+		B233D50A7046E5F693918D86 /* XCLocalSwiftPackageReference "Vendor/tree-sitter-javascript" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = "Vendor/tree-sitter-javascript";
+		};
+		D37EE391A9AD48744BC5880E /* XCLocalSwiftPackageReference "Vendor/tree-sitter-css" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = "Vendor/tree-sitter-css";
+		};
+		E6667F2B06B823F8CE5FEECD /* XCLocalSwiftPackageReference "Vendor/tree-sitter-yaml" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = "Vendor/tree-sitter-yaml";
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		20B4FE77435165C5AAFA01F4 /* XCRemoteSwiftPackageReference "swift-tree-sitter" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/tree-sitter/swift-tree-sitter";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.10.0;
+			};
+		};
+		3C3C7689EA99DB00C6C5119F /* XCRemoteSwiftPackageReference "swift-markdown" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/swiftlang/swift-markdown";
+			requirement = {
+				kind = exactVersion;
+				version = 0.8.0;
+			};
+		};
+		64B76938C3BB84275E75D34C /* XCRemoteSwiftPackageReference "tree-sitter-json" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/tree-sitter/tree-sitter-json";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.24.8;
+			};
+		};
+		77B901EEA4C13B1B6D40795C /* XCRemoteSwiftPackageReference "tree-sitter-html" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/tree-sitter/tree-sitter-html";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.23.2;
+			};
+		};
+		A4699A0107F2C52D0858D9B2 /* XCRemoteSwiftPackageReference "tree-sitter-typescript" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/tree-sitter/tree-sitter-typescript";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.23.2;
+			};
+		};
+		B6EC752A8A1AED525ABD60C0 /* XCRemoteSwiftPackageReference "tree-sitter-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/alex-pinkus/tree-sitter-swift";
+			requirement = {
+				kind = revision;
+				revision = 31d17fe7e818a2048c808b5c6fdc2dc792f4f5b5;
+			};
+		};
+		BCFD7DA00075F6784AECC59E /* XCRemoteSwiftPackageReference "tree-sitter-markdown" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/tree-sitter-grammars/tree-sitter-markdown";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.5.3;
+			};
+		};
+		FBDAF2D4DAFF7E0AFD0FD37A /* XCRemoteSwiftPackageReference "tree-sitter-bash" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/tree-sitter/tree-sitter-bash";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.25.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		2EDC32B6911307F6E40D11D6 /* TreeSitterMarkdown */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = BCFD7DA00075F6784AECC59E /* XCRemoteSwiftPackageReference "tree-sitter-markdown" */;
+			productName = TreeSitterMarkdown;
+		};
+		3ED607D3A3DF1E275E5C6429 /* TreeSitterPython */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = TreeSitterPython;
+		};
+		42C63D7189E5896B51122772 /* TreeSitterJSON */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 64B76938C3BB84275E75D34C /* XCRemoteSwiftPackageReference "tree-sitter-json" */;
+			productName = TreeSitterJSON;
+		};
+		4FDD9AC28CC6E2BAA08C9CF6 /* TreeSitterBash */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FBDAF2D4DAFF7E0AFD0FD37A /* XCRemoteSwiftPackageReference "tree-sitter-bash" */;
+			productName = TreeSitterBash;
+		};
+		5A97EC5E393EA662FC286D1A /* TreeSitterJavaScript */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = TreeSitterJavaScript;
+		};
+		654C54075C4172A4D3155F83 /* TreeSitterHTML */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 77B901EEA4C13B1B6D40795C /* XCRemoteSwiftPackageReference "tree-sitter-html" */;
+			productName = TreeSitterHTML;
+		};
+		666517D6D4EE08B9E5F30B4F /* TreeSitterYAML */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = TreeSitterYAML;
+		};
+		68801BDE668000222A463A72 /* TreeSitterTypeScript */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A4699A0107F2C52D0858D9B2 /* XCRemoteSwiftPackageReference "tree-sitter-typescript" */;
+			productName = TreeSitterTypeScript;
+		};
+		AD2F2121824DFF57334813B4 /* SwiftTreeSitter */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 20B4FE77435165C5AAFA01F4 /* XCRemoteSwiftPackageReference "swift-tree-sitter" */;
+			productName = SwiftTreeSitter;
+		};
+		B2660AEEE89FE69E6B94B8AF /* TreeSitterCSS */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = TreeSitterCSS;
+		};
+		C565BCE8E982F54EBE83C10B /* Markdown */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 3C3C7689EA99DB00C6C5119F /* XCRemoteSwiftPackageReference "swift-markdown" */;
+			productName = Markdown;
+		};
+		E72AC3A4E6D30544C1284B25 /* TreeSitterSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = B6EC752A8A1AED525ABD60C0 /* XCRemoteSwiftPackageReference "tree-sitter-swift" */;
+			productName = TreeSitterSwift;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 4B526AEFCFA719E3AE5D64FC /* Project object */;
+}

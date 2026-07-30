@@ -1,0 +1,151 @@
+name: AshtynMD
+options:
+  bundleIdPrefix: com.kadeem
+  deploymentTarget:
+    macOS: "14.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    SWIFT_STRICT_CONCURRENCY: complete
+    MACOSX_DEPLOYMENT_TARGET: "14.0"
+    CODE_SIGN_STYLE: Manual
+    CODE_SIGN_IDENTITY: "-"
+    DEVELOPMENT_TEAM: ""
+  configs:
+    Release:
+      ENABLE_HARDENED_RUNTIME: true
+packages:
+  swift-markdown:
+    url: https://github.com/swiftlang/swift-markdown
+    exactVersion: 0.8.0
+  SwiftTreeSitter:
+    url: https://github.com/tree-sitter/swift-tree-sitter
+    from: 0.10.0
+  TreeSitterSwift:
+    url: https://github.com/alex-pinkus/tree-sitter-swift
+    # 0.7.3-with-generated-files: plain tags omit the generated parser.c
+    revision: 31d17fe7e818a2048c808b5c6fdc2dc792f4f5b5
+  TreeSitterPython:
+    path: Vendor/tree-sitter-python
+  TreeSitterJavaScript:
+    path: Vendor/tree-sitter-javascript
+  TreeSitterTypeScript:
+    url: https://github.com/tree-sitter/tree-sitter-typescript
+    from: 0.23.2
+  TreeSitterJSON:
+    url: https://github.com/tree-sitter/tree-sitter-json
+    from: 0.24.8
+  TreeSitterYAML:
+    path: Vendor/tree-sitter-yaml
+  TreeSitterHTML:
+    url: https://github.com/tree-sitter/tree-sitter-html
+    from: 0.23.2
+  TreeSitterCSS:
+    path: Vendor/tree-sitter-css
+  TreeSitterBash:
+    url: https://github.com/tree-sitter/tree-sitter-bash
+    from: 0.25.1
+  TreeSitterMarkdown:
+    url: https://github.com/tree-sitter-grammars/tree-sitter-markdown
+    from: 0.5.3
+targets:
+  AshtynMD:
+    type: application
+    platform: macOS
+    sources:
+      - path: AshtynMD
+        excludes:
+          - "Tests/**"
+          - "UITests/**"
+    entitlements:
+      path: AshtynMD/App/AshtynMD.entitlements
+      properties:
+        com.apple.security.app-sandbox: true
+        com.apple.security.files.user-selected.read-write: true
+        com.apple.security.files.bookmarks.app-scope: true
+        com.apple.security.network.client: true
+    info:
+      path: AshtynMD/App/Info.plist
+      properties:
+        CFBundleName: Ashtyn MD
+        CFBundleDisplayName: Ashtyn MD
+        CFBundleShortVersionString: "0.1.0"
+        CFBundleVersion: "1"
+        LSMinimumSystemVersion: "14.0"
+        LSApplicationCategoryType: public.app-category.productivity
+        NSHumanReadableCopyright: "© 2026 Kadeem Jeffery"
+        CFBundleDocumentTypes:
+          - CFBundleTypeName: Markdown Document
+            CFBundleTypeRole: Editor
+            LSHandlerRank: Alternate
+            LSItemContentTypes:
+              - net.daringfireball.markdown
+          - CFBundleTypeName: Plain Text Document
+            CFBundleTypeRole: Editor
+            LSHandlerRank: Alternate
+            LSItemContentTypes:
+              - public.plain-text
+              - public.text
+          - CFBundleTypeName: Source Code
+            CFBundleTypeRole: Editor
+            LSHandlerRank: Alternate
+            LSItemContentTypes:
+              - public.source-code
+              - public.swift-source
+              - public.python-script
+              - com.netscape.javascript-source
+              - public.json
+              - public.yaml
+              - public.html
+              - public.css
+              - public.shell-script
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.kadeem.ashtynmd
+    dependencies:
+      - package: swift-markdown
+        product: Markdown
+      - package: SwiftTreeSitter
+        product: SwiftTreeSitter
+      - package: TreeSitterSwift
+        product: TreeSitterSwift
+      - package: TreeSitterPython
+        product: TreeSitterPython
+      - package: TreeSitterJavaScript
+        product: TreeSitterJavaScript
+      - package: TreeSitterTypeScript
+        product: TreeSitterTypeScript
+      - package: TreeSitterJSON
+        product: TreeSitterJSON
+      - package: TreeSitterYAML
+        product: TreeSitterYAML
+      - package: TreeSitterHTML
+        product: TreeSitterHTML
+      - package: TreeSitterCSS
+        product: TreeSitterCSS
+      - package: TreeSitterBash
+        product: TreeSitterBash
+      - package: TreeSitterMarkdown
+        product: TreeSitterMarkdown
+  AshtynMDTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: AshtynMD/Tests
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: true
+    dependencies:
+      - target: AshtynMD
+schemes:
+  AshtynMD:
+    build:
+      targets:
+        AshtynMD: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - AshtynMDTests
