@@ -6,12 +6,14 @@
 #   script/release.sh --skip-notarization  # sign + verify + package only
 #
 # Environment:
-#   ASHTYN_NOTARY_PROFILE  notarytool keychain profile name (default: AshtynMD)
+#   ASHTYN_NOTARY_PROFILE  notarytool keychain profile name (default: AshtynMD-notary)
 #   ASHTYN_OUTPUT_DIR      where the .dmg is written (default: <repo>/build/release)
 #
-# Create the notary profile once with:
-#   xcrun notarytool store-credentials AshtynMD \
-#     --apple-id <apple-id> --team-id JUQMKZZ7TJ --password <app-specific-password>
+# The default profile already exists in the login keychain (created for
+# FolderLint, same team). To recreate it, or to use a different profile:
+#   xcrun notarytool store-credentials <profile> \
+#     --key ~/.appstoreconnect/private_keys/AuthKey_<KEY-ID>.p8 \
+#     --key-id <KEY-ID> --issuer <ISSUER-UUID>
 set -euo pipefail
 
 SCRIPT_DIR="${0:A:h}"
@@ -27,7 +29,7 @@ for arg in "$@"; do
   esac
 done
 
-NOTARY_PROFILE="${ASHTYN_NOTARY_PROFILE:-AshtynMD}"
+NOTARY_PROFILE="${ASHTYN_NOTARY_PROFILE:-AshtynMD-notary}"
 OUTPUT_DIR="${ASHTYN_OUTPUT_DIR:-$REPO_ROOT/build/release}"
 
 # ---------------------------------------------------------------- preflight

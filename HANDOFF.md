@@ -1,7 +1,7 @@
 # Ashtyn MD — Implementation Handoff
 
 **Date:** 2026-07-30
-**State:** All 6 phases complete and verified. A signed, universal, Hardened-Runtime `.dmg` builds via `script/release.sh`; notarization is the only step needing operator credentials.
+**State:** All 6 phases complete and verified. `script/release.sh` produces a signed, **notarized**, stapled universal `.dmg` end-to-end; the first notarized build shipped 2026-07-30 (both submissions `Accepted`, Gatekeeper: `Notarized Developer ID`).
 **Repo:** `/Users/kadeem/Development/ashtyn_md` — git initialized, **no commits yet** (nothing was ever committed; make an initial commit first thing if you want history).
 
 ## What this is
@@ -77,7 +77,7 @@ project.yml      XcodeGen manifest (packages pinned here; Package.resolved pins 
 ## Releasing
 
 ```bash
-script/release.sh                      # full pipeline (requires a notary profile)
+script/release.sh                      # full pipeline incl. notarization (default profile: AshtynMD-notary)
 script/release.sh --skip-notarization  # signed + verified .dmg, no notarization
 ```
 
@@ -85,8 +85,11 @@ Output: `build/release/AshtynMD-<version>.dmg` (gitignored). Verified locally:
 universal (`x86_64 arm64`), Hardened Runtime, Developer ID `JUQMKZZ7TJ`, all four
 entitlements present, `codesign --verify --deep --strict` clean, 5.9 MB.
 
-**Notarization needs a one-time credential setup.** Either method works; the
-profile name must be `AshtynMD` unless `ASHTYN_NOTARY_PROFILE` overrides it.
+**Notarization credentials are already set up on this machine**: the keychain
+holds a working notarytool profile named `AshtynMD-notary` (created for the
+FolderLint project, same team `JUQMKZZ7TJ`), and the script defaults to it.
+On a new machine, recreate a profile with either method below and point
+`ASHTYN_NOTARY_PROFILE` at it.
 
 App Store Connect API key (preferred — unattended, works in CI). The key lives
 at `~/.appstoreconnect/private_keys/AuthKey_<KEY-ID>.p8`; the Issuer ID is a UUID
@@ -137,8 +140,10 @@ identity resolution, and temp-file purging.
 
 ### Remaining distribution follow-ups
 
-1. Run the pipeline once with real notary credentials and confirm
-   `spctl --assess` passes on a second Mac.
+1. Copy `build/release/AshtynMD-0.1.0.dmg` to a second Mac and confirm it
+   opens without Gatekeeper warnings (local `spctl --assess` already reports
+   `accepted, source=Notarized Developer ID`, and the ticket is stapled, so
+   it should pass offline too).
 2. Optional: a self-updater, which the spec defers until after the first
    notarized beta.
 
