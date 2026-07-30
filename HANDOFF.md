@@ -85,12 +85,30 @@ Output: `build/release/AshtynMD-<version>.dmg` (gitignored). Verified locally:
 universal (`x86_64 arm64`), Hardened Runtime, Developer ID `JUQMKZZ7TJ`, all four
 entitlements present, `codesign --verify --deep --strict` clean, 5.9 MB.
 
-**Notarization needs a one-time credential setup** (not yet done on this machine):
+**Notarization needs a one-time credential setup.** Either method works; the
+profile name must be `AshtynMD` unless `ASHTYN_NOTARY_PROFILE` overrides it.
+
+App Store Connect API key (preferred — unattended, works in CI). The key lives
+at `~/.appstoreconnect/private_keys/AuthKey_<KEY-ID>.p8`; the Issuer ID is a UUID
+from App Store Connect → Users and Access → Integrations → App Store Connect API
+and is *not* stored in the `.p8`:
+
+```bash
+xcrun notarytool store-credentials AshtynMD \
+  --key ~/.appstoreconnect/private_keys/AuthKey_<KEY-ID>.p8 \
+  --key-id <KEY-ID> --issuer <ISSUER-UUID>
+```
+
+Apple ID with an app-specific password (interactive fallback):
 
 ```bash
 xcrun notarytool store-credentials AshtynMD \
   --apple-id <apple-id> --team-id JUQMKZZ7TJ --password <app-specific-password>
 ```
+
+`store-credentials` validates against Apple before saving, so success means the
+credentials really work. Notarization also requires an active paid Developer
+Program membership — a valid Developer ID certificate alone is not sufficient.
 
 Override the profile name with `ASHTYN_NOTARY_PROFILE`, the output directory with
 `ASHTYN_OUTPUT_DIR`. `script/release_lib.sh` holds the reusable helpers; the three
