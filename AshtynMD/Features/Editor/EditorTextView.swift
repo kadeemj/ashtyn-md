@@ -60,6 +60,7 @@ struct EditorTextView: NSViewRepresentable {
         textView.imageInsertionHandler = imageInsertion
         context.coordinator.configureAI(for: textView)
         context.coordinator.registerSourceEditHandler()
+        context.coordinator.applyCapabilities(to: textView)
         context.coordinator.applyText(session.text)
         context.coordinator.applyProfile(profile, theme: theme, for: session.languageID, in: scrollView)
         context.coordinator.observeScrolling(of: scrollView)
@@ -75,6 +76,7 @@ struct EditorTextView: NSViewRepresentable {
         }
         coordinator.textView?.imageInsertionHandler = imageInsertion
         guard let textView = coordinator.textView else { return }
+        coordinator.applyCapabilities(to: textView)
 
         if coordinator.appliedLanguage != session.languageID
             || coordinator.appliedProfile != profile
@@ -126,7 +128,20 @@ struct EditorTextView: NSViewRepresentable {
             }
         }
 
+        func applyCapabilities(to textView: PlainTextView) {
+            textView.isEditable = session.capabilities.isEditable
+            textView.isSelectable = true
+            if !session.capabilities.allowsAICompletion {
+                aiController.cancelAll()
+            }
+        }
+
         private func makeAIRequest(trigger: AICompletionRequest.Trigger) -> AICompletionRequest? {
+            guard session.capabilities.allowsAICompletion else {
+                AICompletionStatus.shared.lastError =
+                    "AI completion is unavailable in large-file mode."
+                return nil
+            }
             guard let textView,
                   textView.selectedRange().length == 0,
                   !textView.hasMarkedText() else { return nil }

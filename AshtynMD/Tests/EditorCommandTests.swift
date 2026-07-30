@@ -32,6 +32,42 @@ struct EditorCommandTests {
         return view
     }
 
+    @Test func oversizedDocumentIsReadOnlyUntilOpenAnyway() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("ashtyn-editor-\(UUID())", isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: directory,
+            withIntermediateDirectories: true
+        )
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let fileURL = directory.appendingPathComponent("large.md")
+        _ = FileManager.default.createFile(atPath: fileURL.path, contents: Data())
+        let handle = try FileHandle(forWritingTo: fileURL)
+        try handle.truncate(atOffset: 10 * 1024 * 1024 + 1)
+        try handle.close()
+        let session = DocumentSession(
+            fileURL: fileURL,
+            file: LoadedTextFile(
+                text: "",
+                encoding: .utf8(bom: false),
+                lineEnding: .lf
+            ),
+            recoveryStore: RecoveryStore(
+                directory: directory.appendingPathComponent("Recovery")
+            )
+        )
+        let coordinator = EditorTextView.Coordinator(session: session)
+        let textView = PlainTextView(frame: .zero)
+
+        coordinator.applyCapabilities(to: textView)
+        #expect(!textView.isEditable)
+        #expect(textView.isSelectable)
+
+        session.openLargeFileAnyway()
+        coordinator.applyCapabilities(to: textView)
+        #expect(textView.isEditable)
+    }
+
     // MARK: - Duplicate
 
     @Test func duplicateMiddleLine() {

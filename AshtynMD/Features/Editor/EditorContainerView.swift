@@ -50,6 +50,9 @@ struct EditorContainerView: View {
     @State private var previewMode: MarkdownPreviewMode?
     @State private var renderedHTML = ""
     @State private var renderTask: Task<Void, Never>?
+    @State private var renderGeneration = 0
+    @State private var previewIsStale = true
+    @State private var isRenderingPreview = false
 
     /// Split is the initial Markdown mode on windows at least this wide.
     static let splitDefaultMinimumWidth: CGFloat = 1_000
@@ -72,6 +75,7 @@ struct EditorContainerView: View {
                 if let error = session.lastSaveError {
                     errorBanner(error)
                 }
+                capabilityBanner
 
                 documentBody
 
@@ -96,6 +100,9 @@ struct EditorContainerView: View {
         .onChange(of: activeMode) {
             session.viewState.previewMode = activeMode?.rawValue
             scheduleRender(immediate: true)
+        }
+        .onDisappear {
+            renderTask?.cancel()
         }
     }
 
@@ -136,7 +143,7 @@ struct EditorContainerView: View {
             case .split:
                 HSplitView {
                     editor.frame(minWidth: 280)
-                    preview(context).frame(minWidth: 280)
+                    previewPane(context).frame(minWidth: 280)
                 }
             case .preview:
                 ZStack {
@@ -147,7 +154,7 @@ struct EditorContainerView: View {
                         .opacity(0)
                         .allowsHitTesting(false)
                         .accessibilityHidden(true)
-                    preview(context)
+                    previewPane(context)
                 }
             }
         } else {
@@ -165,6 +172,31 @@ struct EditorContainerView: View {
         )
     }
 
+    private func previewPane(_ context: PreviewContext) -> some View {
+        ZStack {
+            preview(context)
+            if session.capabilities.previewBehavior == .disabled {
+                ContentUnavailableView(
+                    "Preview Unavailable",
+                    systemImage: "lock.doc",
+                    description: Text("Choose Open Anyway to use manual preview.")
+                )
+                .background(Color(nsColor: .textBackgroundColor))
+            } else if session.capabilities.previewBehavior == .manual && previewIsStale {
+                VStack(spacing: 12) {
+                    Text(renderedHTML.isEmpty ? "Preview is ready to render." : "Preview is out of date.")
+                        .foregroundStyle(.secondary)
+                    Button(isRenderingPreview ? "Rendering…" : "Render Preview") {
+                        scheduleRender(force: true)
+                    }
+                    .disabled(isRenderingPreview)
+                }
+                .padding(24)
+                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+            }
+        }
+    }
+
     // MARK: - Mode + rendering
 
     private func resolveInitialMode(width: CGFloat) {
@@ -179,24 +211,43 @@ struct EditorContainerView: View {
     }
 
     /// Re-renders 250 ms after the last edit; obsolete renders are cancelled.
-    private func scheduleRender(immediate: Bool = false) {
+    private func scheduleRender(immediate: Bool = false, force: Bool = false) {
         renderTask?.cancel()
+        renderGeneration &+= 1
+        let generation = renderGeneration
+        isRenderingPreview = false
         guard isMarkdown, previewMode != .editor else { return }
+        switch session.capabilities.previewBehavior {
+        case .disabled:
+            renderedHTML = ""
+            previewIsStale = true
+            isRenderingPreview = false
+            return
+        case .manual where !force:
+            previewIsStale = true
+            isRenderingPreview = false
+            return
+        case .live, .manual:
+            break
+        }
         let text = session.text
         let policy = MarkdownRenderPolicy(
             allowRawHTML: previewContext?.allowRawHTML ?? false,
             allowRemoteImages: false
         )
+        isRenderingPreview = true
         renderTask = Task {
-            if !immediate {
+            if !immediate && !force {
                 try? await Task.sleep(for: .milliseconds(250))
                 guard !Task.isCancelled else { return }
             }
             let html = await Task.detached(priority: .userInitiated) {
                 MarkdownHTMLRenderer(policy: policy).renderBody(text)
             }.value
-            guard !Task.isCancelled else { return }
+            guard !Task.isCancelled, renderGeneration == generation else { return }
             renderedHTML = html
+            previewIsStale = false
+            isRenderingPreview = false
         }
     }
 
@@ -219,6 +270,39 @@ struct EditorContainerView: View {
     }
 
     // MARK: - Banners
+
+    @ViewBuilder
+    private var capabilityBanner: some View {
+        switch session.capabilities.tier {
+        case .full:
+            EmptyView()
+        case .large:
+            banner(
+                icon: "doc.badge.clock",
+                color: .secondary,
+                message: isMarkdown
+                    ? "Large-file mode: AI is off and Markdown preview updates manually."
+                    : "Large-file mode: AI completion is off."
+            ) {
+                if isMarkdown {
+                    Button(isRenderingPreview ? "Rendering…" : "Render Preview") {
+                        scheduleRender(force: true)
+                    }
+                    .disabled(isRenderingPreview)
+                }
+            }
+        case .readOnlyLarge:
+            banner(
+                icon: "lock.doc",
+                color: .orange,
+                message: "This file is over 10 MB and opened read-only."
+            ) {
+                Button("Open Anyway") {
+                    session.openLargeFileAnyway()
+                }
+            }
+        }
+    }
 
     private var recoveryBanner: some View {
         banner(

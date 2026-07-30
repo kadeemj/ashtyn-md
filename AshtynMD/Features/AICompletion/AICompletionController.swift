@@ -87,12 +87,12 @@ final class AICompletionController {
         trigger: AICompletionRequest.Trigger,
         context: @escaping @MainActor () -> AICompletionRequest?
     ) {
+        guard let request = context() else { return }
         guard let provider = providerFactory() else {
             AICompletionStatus.shared.lastError =
                 "AI completion isn’t configured. Choose a provider in Settings."
             return
         }
-        guard let request = context() else { return }
 
         streamTask?.cancel()
         streamTask = Task { [weak self] in

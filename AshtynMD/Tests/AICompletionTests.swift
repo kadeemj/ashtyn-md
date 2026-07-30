@@ -282,6 +282,22 @@ struct AICompletionControllerTests {
         )
     }
 
+    @Test func nilContextDoesNotConstructAProvider() {
+        let controller = AICompletionController()
+        var providerWasRequested = false
+        controller.providerFactory = {
+            providerWasRequested = true
+            return MockProvider(
+                behavior: .stream(["unused"], delayMilliseconds: 0)
+            )
+        }
+
+        controller.requestManually { nil }
+
+        #expect(!providerWasRequested)
+        #expect(controller.ghostText == nil)
+    }
+
     @Test func streamedGhostTextAccumulatesAndAcceptClears() async throws {
         let controller = makeController(.stream(["let ", "y = 2"], delayMilliseconds: 10))
         var updates: [String?] = []
