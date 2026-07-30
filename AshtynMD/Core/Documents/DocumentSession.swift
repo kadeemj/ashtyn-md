@@ -29,6 +29,8 @@ final class DocumentSession: Identifiable {
     private(set) var lastSaveError: String?
     /// A newer recovery snapshot found on open, awaiting a user decision.
     private(set) var pendingRecovery: RecoverySnapshot?
+    /// File-size-derived editing, preview, and AI policy.
+    private(set) var capabilities: DocumentCapabilities
     /// Live cursor/selection/scroll state, maintained by the editor view and
     /// persisted per-library on tab switches and closes. Observation-ignored:
     /// cursor movement must not invalidate SwiftUI views.
@@ -53,6 +55,7 @@ final class DocumentSession: Identifiable {
     private var autosaveTask: Task<Void, Never>?
     private var snapshotTask: Task<Void, Never>?
     private let recoveryStore: RecoveryStore
+    private var openedLargeFileAnyway = false
 
     static let autosaveDelay: Duration = .milliseconds(700)
     static let snapshotInterval: Duration = .seconds(2)
@@ -69,6 +72,9 @@ final class DocumentSession: Identifiable {
         )
         self.lastSavedHash = SaveCoordinator.contentHash(of: file.text)
         self.recoveryStore = recoveryStore
+        self.capabilities = DocumentCapabilities(
+            byteCount: Self.fileByteCount(at: fileURL)
+        )
 
         let disk = SaveCoordinator.diskState(of: fileURL)
         self.lastKnownModificationDate = disk?.modificationDate
@@ -90,6 +96,26 @@ final class DocumentSession: Identifiable {
             try LoadedTextFile.load(from: fileURL)
         }.value
         return DocumentSession(fileURL: fileURL, file: file, recoveryStore: recoveryStore)
+    }
+
+    /// Explicitly enables editing for a file over 10 MB while retaining
+    /// large-file safeguards. This decision lasts only for this session.
+    func openLargeFileAnyway() {
+        guard capabilities.tier == .readOnlyLarge else { return }
+        openedLargeFileAnyway = true
+        capabilities = capabilities.openingAnyway()
+    }
+
+    private static func fileByteCount(at url: URL) -> Int64 {
+        let attributes = try? FileManager.default.attributesOfItem(atPath: url.path)
+        return (attributes?[.size] as? NSNumber)?.int64Value ?? 0
+    }
+
+    private func refreshCapabilities() {
+        capabilities = DocumentCapabilities(
+            byteCount: Self.fileByteCount(at: fileURL),
+            openedAnyway: openedLargeFileAnyway
+        )
     }
 
     // MARK: - Language
@@ -180,6 +206,7 @@ final class DocumentSession: Identifiable {
             let disk = SaveCoordinator.diskState(of: url)
             lastKnownModificationDate = disk?.modificationDate
             fileResourceID = disk?.resourceID
+            refreshCapabilities()
             if editRevision == revision {
                 isDirty = false
                 snapshotTask?.cancel()
@@ -253,6 +280,7 @@ final class DocumentSession: Identifiable {
         isDirty = false
         conflict = .none
         editRevision &+= 1
+        refreshCapabilities()
         recoveryStore.removeSnapshot(for: fileURL)
     }
 
@@ -306,6 +334,7 @@ final class DocumentSession: Identifiable {
         let disk = SaveCoordinator.diskState(of: newURL)
         lastKnownModificationDate = disk?.modificationDate
         fileResourceID = disk?.resourceID
+        refreshCapabilities()
     }
 
     func close() {

@@ -128,6 +128,52 @@ struct DocumentSessionTests {
         return (session, docURL, dir)
     }
 
+    @Test func oversizedFileRequiresExplicitSafeguardedOverride() throws {
+        let dir = try makeTempDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let docURL = dir.appendingPathComponent("large.md")
+        _ = FileManager.default.createFile(atPath: docURL.path, contents: Data())
+        let handle = try FileHandle(forWritingTo: docURL)
+        try handle.truncate(atOffset: 10 * 1024 * 1024 + 1)
+        try handle.close()
+        let session = DocumentSession(
+            fileURL: docURL,
+            file: LoadedTextFile(
+                text: "",
+                encoding: .utf8(bom: false),
+                lineEnding: .lf
+            ),
+            recoveryStore: RecoveryStore(
+                directory: dir.appendingPathComponent("Recovery")
+            )
+        )
+
+        #expect(session.capabilities.tier == .readOnlyLarge)
+        #expect(!session.capabilities.isEditable)
+
+        session.openLargeFileAnyway()
+
+        #expect(session.capabilities.tier == .large)
+        #expect(session.capabilities.isEditable)
+        #expect(!session.capabilities.allowsAICompletion)
+    }
+
+    @Test func successfulSaveRefreshesFileSizeCapabilities() async throws {
+        let (session, _, dir) = try makeSession(initialText: "")
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        session.updateText(
+            String(
+                repeating: "x",
+                count: Int(DocumentCapabilities.fullFeatureByteLimit) + 1
+            )
+        )
+        await session.save(reason: .explicit)
+
+        #expect(session.capabilities.tier == .large)
+        #expect(session.capabilities.previewBehavior == .manual)
+    }
+
     @Test func editMarksDirtyAndSaveWritesThrough() async throws {
         let (session, docURL, dir) = try makeSession()
         defer { try? FileManager.default.removeItem(at: dir) }
