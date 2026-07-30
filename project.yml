@@ -64,6 +64,11 @@ targets:
         excludes:
           - "Tests/**"
           - "UITests/**"
+          # Release artifacts kept alongside the sources must never be bundled
+          # as resources: a .dmg copied in here would be embedded in the app,
+          # producing an app that contains a disk image of itself.
+          - "**/*.dmg"
+          - "**/*.zip"
     entitlements:
       path: AshtynMD/App/AshtynMD.entitlements
       properties:
