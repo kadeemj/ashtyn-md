@@ -1,7 +1,7 @@
 # Ashtyn MD — Implementation Handoff
 
 **Date:** 2026-07-30
-**State:** Phases 1–5 of 6 complete and verified. Phase 6 (hardening and distribution) not started.
+**State:** All 6 phases complete and verified. A signed, universal, Hardened-Runtime `.dmg` builds via `script/release.sh`; notarization is the only step needing operator credentials.
 **Repo:** `/Users/kadeem/Development/ashtyn_md` — git initialized, **no commits yet** (nothing was ever committed; make an initial commit first thing if you want history).
 
 ## What this is
@@ -72,17 +72,57 @@ project.yml      XcodeGen manifest (packages pinned here; Package.resolved pins 
 | 3. Editor + languages | ✅ | All 10 grammars load + per-language highlight fixtures; incremental edits w/ emoji ranges; every line command tested incl. boundaries; pairing/skip-over; ⌘L/⇧⌘D/⇧⌘K/⌥⌘↑↓/⌘//⌃Space wired; profiles+themes+settings UI; language override menu |
 | 4. Markdown preview | ✅ | GFM fixtures (tables w/ alignment, tasks, strikethrough, autolinks); raw HTML escaped by default w/ per-library opt-in (View menu); remote images blocked; task checkbox → undoable source edit; Assets image paste/drop w/ relative links; per-file mode + scroll persistence; 250 ms debounced re-render |
 | 5. AI completion | ✅ | Three streaming adapters + model discovery + connection test; Keychain-only keys (no-leak test); one-time cloud consent dialog; ghost text (Tab accept / Esc dismiss, never auto-inserted); 800 ms auto-trigger off by default; provider in status bar; mock-provider tests for streamed/cancelled/failed/accepted |
-| 6. Hardening + distribution | ❌ not started | see "Phase 6 plan" |
+| 6. Hardening + distribution | ✅ | 15 XCUITests (editor/library/keyboard/bootstrap); large-file tiers via `DocumentCapabilities`; external-sync stress + conflict comparison; `script/release.sh` produces a verified signed universal .dmg (archive → export → verify → notarize → staple) |
 
-## Phase 6 plan (remaining work)
+## Releasing
 
-1. **Universal Release build check**: `xcodebuild -configuration Release ARCHS="arm64 x86_64" ONLY_ACTIVE_ARCH=NO build` — never yet run; watch for x86_64 issues in the vendored C grammars.
-2. **Developer ID signing + notarization** — needs the user's Developer ID cert/team id. Script: archive → `codesign` w/ Hardened Runtime + entitlements → `xcrun notarytool submit --wait` → `xcrun stapler staple` → `hdiutil create` signed .dmg.
-3. **UI tests** (spec lists a full XCUITest suite: library reopen, tabs restore, standalone open, paste fidelity, mode toggle, search/favorite/recents, image paste, mocked ghost text, keyboard-only). A `UITests/` target does not exist yet; project.yml needs a bundle.ui-testing target. NSOpenPanel onboarding will need a launch-argument escape hatch (e.g. `-libraryRoot <path>`) to be testable.
-4. **Accessibility audit**: VoiceOver labels exist on icons/buttons; needs a real pass (focus order, keyboard-only operation, high-contrast, reduced transparency).
-5. **Performance profiling**: formal 10,000-file library validation (spec target), editor typing latency on 2 MB files, preview refresh <300 ms on 100 KB notes.
-6. **Large-file tiers** not implemented: 2–10 MB "large-file mode" (deferred preview, AI off) and >10 MB read-only + "Open Anyway". Currently all files get all features. This is a spec gap to close in Phase 6.
-7. External-sync stress tests (iCloud/Dropbox-style rapid external changes).
+```bash
+script/release.sh                      # full pipeline (requires a notary profile)
+script/release.sh --skip-notarization  # signed + verified .dmg, no notarization
+```
+
+Output: `build/release/AshtynMD-<version>.dmg` (gitignored). Verified locally:
+universal (`x86_64 arm64`), Hardened Runtime, Developer ID `JUQMKZZ7TJ`, all four
+entitlements present, `codesign --verify --deep --strict` clean, 5.9 MB.
+
+**Notarization needs a one-time credential setup** (not yet done on this machine):
+
+```bash
+xcrun notarytool store-credentials AshtynMD \
+  --apple-id <apple-id> --team-id JUQMKZZ7TJ --password <app-specific-password>
+```
+
+Override the profile name with `ASHTYN_NOTARY_PROFILE`, the output directory with
+`ASHTYN_OUTPUT_DIR`. `script/release_lib.sh` holds the reusable helpers; the three
+`script/tests/release_*.sh` scripts cover version parsing, architecture assertions,
+identity resolution, and temp-file purging.
+
+### Signing pitfalls that already bit us
+
+- **Never sign with `codesign --deep`.** Apple treats `--deep` as a diagnostic
+  aid, not a distribution signing mode. Let Xcode's archive+export sign nested
+  code inside-out (this app embeds 12 tree-sitter resource bundles).
+- **Stale `*.cstemp` files poison a bundle permanently.** `codesign` writes each
+  signature to `<name>.cstemp` then renames it. If a run is interrupted, killed,
+  or races another `codesign`, the partial file survives inside the bundle, and
+  every later signing/verification pass walks into it and fails with
+  `invalid or unsupported format for signature` / `main executable failed strict
+  validation`, naming `AshtynMD.cstemp` as the bad subcomponent. Deleting the
+  stray file is the whole fix; `purge_signing_temporaries` does it before each
+  signing stage, and `release_signing_test.sh` guards the behavior.
+- **Resolve the identity to its 40-char SHA-1, not a display-name fragment.**
+  Parsing `security find-identity` with zsh word-splitting yielded `)`, which
+  xcodebuild reported as the misleading
+  `No certificate for team 'JUQMKZZ7TJ' matching ')' found`.
+- **Keep `--timestamp`.** A secure timestamp is mandatory for notarization, so
+  never substitute `--timestamp=none`.
+
+### Remaining distribution follow-ups
+
+1. Run the pipeline once with real notary credentials and confirm
+   `spctl --assess` passes on a second Mac.
+2. Optional: a self-updater, which the spec defers until after the first
+   notarized beta.
 
 ## Dependency quirks (important)
 
