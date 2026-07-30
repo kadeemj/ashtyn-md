@@ -53,6 +53,7 @@ struct EditorContainerView: View {
     @State private var renderGeneration = 0
     @State private var previewIsStale = true
     @State private var isRenderingPreview = false
+    @State private var comparison: ConflictComparison?
 
     /// Split is the initial Markdown mode on windows at least this wide.
     static let splitDefaultMinimumWidth: CGFloat = 1_000
@@ -103,6 +104,9 @@ struct EditorContainerView: View {
         }
         .onDisappear {
             renderTask?.cancel()
+        }
+        .sheet(item: $comparison) { value in
+            ConflictComparisonView(comparison: value)
         }
     }
 
@@ -321,6 +325,9 @@ struct EditorContainerView: View {
             color: .orange,
             message: "This file was changed outside Ashtyn MD while you had unsaved edits."
         ) {
+            Button("Compare") {
+                comparison = session.conflictComparison()
+            }
             Button("Use Disk") { session.resolveConflictUsingDisk() }
             Button("Keep Mine") { Task { await session.resolveConflictKeepingMine() } }
             Button("Save Copy…") { saveCopy() }

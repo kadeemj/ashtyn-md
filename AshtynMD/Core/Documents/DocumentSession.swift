@@ -9,6 +9,25 @@ enum DocumentConflictState: Equatable, Sendable {
     case fileMissing
 }
 
+struct ConflictComparison: Identifiable, Equatable, Sendable {
+    let id: UUID
+    let fileName: String
+    let editorText: String
+    let diskText: String
+
+    init(
+        id: UUID = UUID(),
+        fileName: String,
+        editorText: String,
+        diskText: String
+    ) {
+        self.id = id
+        self.fileName = fileName
+        self.editorText = editorText
+        self.diskText = diskText
+    }
+}
+
 /// Editing state for one open file: content, byte-level format, dirty and
 /// conflict tracking, autosave, and crash recovery. One instance per open
 /// document; the canonical data is always the file itself.
@@ -282,6 +301,19 @@ final class DocumentSession: Identifiable {
         editRevision &+= 1
         refreshCapabilities()
         recoveryStore.removeSnapshot(for: fileURL)
+    }
+
+    /// Captures both conflict sides without mutating either version.
+    func conflictComparison() -> ConflictComparison? {
+        guard conflict == .externalChange,
+              let diskFile = try? LoadedTextFile.load(from: fileURL) else {
+            return nil
+        }
+        return ConflictComparison(
+            fileName: displayName,
+            editorText: text,
+            diskText: diskFile.text
+        )
     }
 
     /// Conflict resolution: discard local edits and take the disk version.

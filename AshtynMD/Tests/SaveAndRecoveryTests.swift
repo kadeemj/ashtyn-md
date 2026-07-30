@@ -235,6 +235,25 @@ struct DocumentSessionTests {
         #expect(try String(contentsOf: docURL, encoding: .utf8) == "my local edit\n")
     }
 
+    @Test func comparisonReturnsEditorAndCurrentDiskText() throws {
+        let (session, docURL, dir) = try makeSession()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        session.updateText("local\n")
+        try Data("remote\n".utf8).write(to: docURL)
+        try FileManager.default.setAttributes(
+            [.modificationDate: Date().addingTimeInterval(60)],
+            ofItemAtPath: docURL.path
+        )
+        session.checkForExternalChanges()
+
+        let comparison = session.conflictComparison()
+
+        #expect(comparison?.fileName == "doc.md")
+        #expect(comparison?.editorText == "local\n")
+        #expect(comparison?.diskText == "remote\n")
+        #expect(session.text == "local\n")
+    }
+
     @Test func missingFileIsDetectedAndRestorable() async throws {
         let (session, docURL, dir) = try makeSession()
         defer { try? FileManager.default.removeItem(at: dir) }

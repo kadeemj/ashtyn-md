@@ -13,6 +13,7 @@
 		2432ED2781D5899374403D52 /* TreeSitterTypeScript in Frameworks */ = {isa = PBXBuildFile; productRef = 68801BDE668000222A463A72 /* TreeSitterTypeScript */; };
 		245A1B192C60F2FA7EC5E143 /* LibraryIndexer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3506FABB182E82FDDB01F65B /* LibraryIndexer.swift */; };
 		2476C44464F855456436359D /* GrammarRegistry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5424E075E33393BE32DFC0C4 /* GrammarRegistry.swift */; };
+		27863C8A1B270196BF0744D0 /* ConflictComparisonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE81EC092630099F1DCC173B /* ConflictComparisonView.swift */; };
 		28F1A682E682AA53CB950A3D /* SessionRegistry.swift in Sources */ = {isa = PBXBuildFile; fileRef = F21B8F916CF2C4CF1F91445F /* SessionRegistry.swift */; };
 		2BC14522F0F6AE7A4C20FC89 /* TreeSitterHTML in Frameworks */ = {isa = PBXBuildFile; productRef = 654C54075C4172A4D3155F83 /* TreeSitterHTML */; };
 		2CAFFB0A4F14E97FCFBC9F50 /* LineNumberRulerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82ED3B99B30E2D894D7E0C9F /* LineNumberRulerView.swift */; };
@@ -49,6 +50,7 @@
 		A5516A50872965C2553B8373 /* FSEventsWatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67FA98C9A5C8B875782A3EE8 /* FSEventsWatcher.swift */; };
 		A5E8B74161F70FF8C2BEBE9F /* EditorTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F63655972D479977924785A /* EditorTheme.swift */; };
 		AEC74EA229A4EB796AEBDF5D /* LanguageID.swift in Sources */ = {isa = PBXBuildFile; fileRef = B297CCE30D2A8CCE14AC0688 /* LanguageID.swift */; };
+		B0C300FE62E4348174EEC007 /* ExternalSyncStressTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5488AA2FBBCBA706D5BF91D /* ExternalSyncStressTests.swift */; };
 		BB3C823A8D86CB49F5347A2A /* RecoveryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32C6587A1E2A8A80E7BEDCF1 /* RecoveryStore.swift */; };
 		C4F310FDAD57675A84E7DAA9 /* LibraryBookmarkStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C99B5341ED308057D4086A9 /* LibraryBookmarkStore.swift */; };
 		C552857286B52A4251D5CD46 /* OfflineCompletion.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6266037D8843109C94ADCCA /* OfflineCompletion.swift */; };
@@ -139,6 +141,7 @@
 		D891E3F0EE2CBFBE9978ACE0 /* AISettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AISettings.swift; sourceTree = "<group>"; };
 		DEB8E5D6E07BCA1C3593E6C2 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		DF489F4E6513E674867FF38F /* SaveCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SaveCoordinator.swift; sourceTree = "<group>"; };
+		E5488AA2FBBCBA706D5BF91D /* ExternalSyncStressTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExternalSyncStressTests.swift; sourceTree = "<group>"; };
 		E55A6BE2EBB31C7B0404CF4A /* LibraryBrowser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryBrowser.swift; sourceTree = "<group>"; };
 		E93B30A723C8FFF033FFE2B1 /* MarkdownHTMLRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownHTMLRenderer.swift; sourceTree = "<group>"; };
 		E9F50D727E50BB3A9882B040 /* AshtynMD.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AshtynMD.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -146,6 +149,7 @@
 		F21B8F916CF2C4CF1F91445F /* SessionRegistry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionRegistry.swift; sourceTree = "<group>"; };
 		F28530459CD463B7D9AF8BA2 /* FileOperations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileOperations.swift; sourceTree = "<group>"; };
 		F44C9EEFCD9187A9591895E5 /* EditorTextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorTextView.swift; sourceTree = "<group>"; };
+		FE81EC092630099F1DCC173B /* ConflictComparisonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConflictComparisonView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -222,6 +226,7 @@
 				733F95269F57D7A91ECBAF43 /* AICompletionTests.swift */,
 				03C3ECE976BC63798E4BE62F /* DocumentCapabilitiesTests.swift */,
 				8ADAC5315AE133F4A6D70B29 /* EditorCommandTests.swift */,
+				E5488AA2FBBCBA706D5BF91D /* ExternalSyncStressTests.swift */,
 				21CE92566F3F737F0D900C13 /* LanguageDetectionTests.swift */,
 				456B2C18228682CCD5E655DE /* LibraryIndexerTests.swift */,
 				5590B6642ADC4ED3CE584A48 /* LibraryStoreTests.swift */,
@@ -290,6 +295,7 @@
 		799809FD58110FE24B49601B /* Editor */ = {
 			isa = PBXGroup;
 			children = (
+				FE81EC092630099F1DCC173B /* ConflictComparisonView.swift */,
 				54BF539E9CD4D2C6F2A35C72 /* EditorContainerView.swift */,
 				F44C9EEFCD9187A9591895E5 /* EditorTextView.swift */,
 				82ED3B99B30E2D894D7E0C9F /* LineNumberRulerView.swift */,
@@ -500,6 +506,7 @@
 				534201D6C714BB946DFE4E06 /* AppSupportPaths.swift in Sources */,
 				8E4E0485F3C3492A63141ACA /* AshtynMDApp.swift in Sources */,
 				56C48D03AD28BF11D957CE28 /* AssetStore.swift in Sources */,
+				27863C8A1B270196BF0744D0 /* ConflictComparisonView.swift in Sources */,
 				69D74430B33982A311516D47 /* CredentialStore.swift in Sources */,
 				2289A0D02A184FE3FF2EB638 /* DocumentCapabilities.swift in Sources */,
 				9AA575D97D7B12F187048B32 /* DocumentSession.swift in Sources */,
@@ -544,6 +551,7 @@
 				1B73F58B3EC05D1DEEA069B8 /* AICompletionTests.swift in Sources */,
 				608DA2E309F23CAA09683FAB /* DocumentCapabilitiesTests.swift in Sources */,
 				DBEB825C2D395CAD52BF57DD /* EditorCommandTests.swift in Sources */,
+				B0C300FE62E4348174EEC007 /* ExternalSyncStressTests.swift in Sources */,
 				F84B54E384E9A4A1EE5FF0F2 /* LanguageDetectionTests.swift in Sources */,
 				5A61DFDD3A7A120D9CE0E6A1 /* LibraryIndexerTests.swift in Sources */,
 				6EF10BBA141CEC7B45F9CC76 /* LibraryStoreTests.swift in Sources */,
