@@ -160,6 +160,8 @@ schemes:
       config: Debug
     test:
       config: Debug
+      environmentVariables:
+        ASHTYN_PERFORMANCE_TESTS: "$(ASHTYN_PERFORMANCE_TESTS)"
       targets:
         - AshtynMDTests
         - AshtynMDUITests

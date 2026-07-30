@@ -2,8 +2,7 @@ import Foundation
 import Testing
 @testable import AshtynMD
 
-/// Indexer tests drive fullScan() directly — FSEvents delivery is exercised
-/// manually and in UI tests, not here, to keep the suite deterministic.
+/// Indexer tests cover direct scans and final-state FSEvents reconciliation.
 @Suite("Library indexer")
 struct LibraryIndexerTests {
     private func makeLibrary() throws -> (root: URL, store: LibraryStore, indexer: LibraryIndexer) {
@@ -41,6 +40,18 @@ struct LibraryIndexerTests {
             try? FileManager.default.removeItem(at: root)
             throw error
         }
+    }
+
+    private func eventually(
+        timeout: Duration = .seconds(10),
+        _ predicate: @escaping () async throws -> Bool
+    ) async throws {
+        let deadline = ContinuousClock.now + timeout
+        while ContinuousClock.now < deadline {
+            if try await predicate() { return }
+            try await Task.sleep(for: .milliseconds(50))
+        }
+        Issue.record("Timed out waiting for FSEvents reconciliation")
     }
 
     @Test func initialScanIndexesSupportedFiles() async throws {
@@ -147,6 +158,48 @@ struct LibraryIndexerTests {
             try await indexer.fullScan()
             let after = try await store.record(forRelativePath: "same.md")
             #expect(before == after)
+        }
+    }
+
+    @Test
+    func coalescedFSEventsReconcileToFinalDiskState() async throws {
+        try await withLibrary { root, store, indexer in
+            try await indexer.start()
+
+            try write("old body\n", to: "one.md", in: root)
+            try write("delete me\n", to: "two.md", in: root)
+            try write("let kept = true\n", to: "keep.swift", in: root)
+            try write("newest searchable body\n", to: "one.md", in: root)
+            try FileManager.default.setAttributes(
+                [.modificationDate: Date().addingTimeInterval(5)],
+                ofItemAtPath: root.appendingPathComponent("one.md").path
+            )
+            try FileManager.default.createDirectory(
+                at: root.appendingPathComponent("notes"),
+                withIntermediateDirectories: true
+            )
+            try FileManager.default.moveItem(
+                at: root.appendingPathComponent("one.md"),
+                to: root.appendingPathComponent("notes/final.md")
+            )
+            try FileManager.default.removeItem(
+                at: root.appendingPathComponent("two.md")
+            )
+
+            try await eventually {
+                let paths = try await store.allFiles()
+                    .map(\.relativePath)
+                    .sorted()
+                let hits = try await store.search("searchable")
+                    .map(\.record.relativePath)
+                return paths == ["keep.swift", "notes/final.md"]
+                    && hits == ["notes/final.md"]
+            }
+
+            #expect(
+                try await store.allFiles().map(\.relativePath).sorted()
+                    == ["keep.swift", "notes/final.md"]
+            )
         }
     }
 
