@@ -51,6 +51,12 @@ actor LibraryStore {
         return try LibraryStore(databaseURL: directory.appendingPathComponent("library.sqlite"))
     }
 
+    /// Releases SQLite resources before the library's files or security scope
+    /// are torn down. Safe to call more than once.
+    func close() throws {
+        try database.close()
+    }
+
     private static func migrate(_ database: SQLiteDatabase) throws {
         try database.executeScript("PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;")
         let version = database.userVersion

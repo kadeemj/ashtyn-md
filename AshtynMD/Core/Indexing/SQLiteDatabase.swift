@@ -4,6 +4,7 @@ import SQLite3
 private let SQLITE_TRANSIENT = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
 
 enum SQLiteError: Error, LocalizedError {
+    case closed
     case openFailed(String)
     case prepareFailed(String, sql: String)
     case stepFailed(String, sql: String)
@@ -11,6 +12,7 @@ enum SQLiteError: Error, LocalizedError {
 
     var errorDescription: String? {
         switch self {
+        case .closed: return "Database is closed."
         case .openFailed(let message): return "Couldn’t open database: \(message)"
         case .prepareFailed(let message, let sql): return "Bad statement (\(message)): \(sql)"
         case .stepFailed(let message, let sql): return "Statement failed (\(message)): \(sql)"
@@ -45,15 +47,34 @@ final class SQLiteDatabase {
     }
 
     deinit {
-        sqlite3_close(handle)
+        try? close()
+    }
+
+    /// Closes the connection. Safe to call more than once.
+    func close() throws {
+        guard let handle else { return }
+        let result = sqlite3_close_v2(handle)
+        guard result == SQLITE_OK else {
+            throw SQLiteError.stepFailed(
+                String(cString: sqlite3_errmsg(handle)),
+                sql: "CLOSE"
+            )
+        }
+        self.handle = nil
     }
 
     private var lastMessage: String {
         handle.map { String(cString: sqlite3_errmsg($0)) } ?? "closed"
     }
 
+    private func openHandle() throws -> OpaquePointer {
+        guard let handle else { throw SQLiteError.closed }
+        return handle
+    }
+
     /// Runs one or more semicolon-separated statements with no parameters.
     func executeScript(_ sql: String) throws {
+        let handle = try openHandle()
         guard sqlite3_exec(handle, sql, nil, nil, nil) == SQLITE_OK else {
             throw SQLiteError.stepFailed(lastMessage, sql: sql)
         }
@@ -92,7 +113,10 @@ final class SQLiteDatabase {
     }
 
     var lastInsertRowID: Int64 {
-        sqlite3_last_insert_rowid(handle)
+        guard let handle else {
+            preconditionFailure("Database is closed.")
+        }
+        return sqlite3_last_insert_rowid(handle)
     }
 
     var userVersion: Int {
@@ -116,6 +140,7 @@ final class SQLiteDatabase {
     }
 
     private func prepare(_ sql: String, _ parameters: [SQLiteValue]) throws -> OpaquePointer {
+        let handle = try openHandle()
         var statement: OpaquePointer?
         guard sqlite3_prepare_v2(handle, sql, -1, &statement, nil) == SQLITE_OK,
               let statement else {

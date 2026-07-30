@@ -118,9 +118,15 @@ final class AppModel {
 
     private func detachLibrary() {
         let oldIndexer = indexer
-        Task { await oldIndexer?.stop() }
+        let oldStore = store
+        let oldRoot = libraryRoot
         indexer = nil
         store = nil
+        libraryRoot = nil
+        searchTask?.cancel()
+        searchTask = nil
+        persistTask?.cancel()
+        persistTask = nil
         for session in tabs {
             session.close()
             SessionRegistry.shared.unregister(session)
@@ -128,9 +134,12 @@ final class AppModel {
         tabs = []
         activeTabID = nil
         sessionFileIDs = [:]
-        libraryRoot?.stopAccessing()
-        libraryRoot = nil
         folderTree = nil
+        Task {
+            await oldIndexer?.stop()
+            try? await oldStore?.close()
+            oldRoot?.stopAccessing()
+        }
     }
 
     /// Called by the change relay whenever the indexer commits a batch.
