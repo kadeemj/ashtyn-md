@@ -16,6 +16,10 @@ struct LibraryBookmarkStore {
                 url.stopAccessingSecurityScopedResource()
             }
         }
+
+        static func unscoped(_ url: URL) -> ResolvedRoot {
+            ResolvedRoot(url: url, isAccessingSecurityScope: false)
+        }
     }
 
     static func saveRoot(_ url: URL) throws {

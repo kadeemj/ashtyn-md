@@ -64,6 +64,20 @@ final class AppModel {
     }
 
     init() {
+        #if DEBUG
+        let configuration = UITestLaunchConfiguration.current
+        if configuration.isEnabled {
+            do {
+                let url = try UITestLaunchConfiguration.prepareFixtureLibrary()
+                if !configuration.showsOnboarding {
+                    attachLibrary(.unscoped(url))
+                }
+            } catch {
+                openError = "Couldn’t prepare UI fixtures: \(error.localizedDescription)"
+            }
+            return
+        }
+        #endif
         if let root = LibraryBookmarkStore.resolveKnownRoots().first {
             attachLibrary(root)
         }
@@ -72,6 +86,18 @@ final class AppModel {
     // MARK: - Library selection
 
     func chooseLibraryFolder() {
+        #if DEBUG
+        if UITestLaunchConfiguration.current.isEnabled {
+            do {
+                attachLibrary(
+                    .unscoped(try UITestLaunchConfiguration.prepareFixtureLibrary())
+                )
+            } catch {
+                openError = "Couldn’t prepare UI fixtures: \(error.localizedDescription)"
+            }
+            return
+        }
+        #endif
         let panel = NSOpenPanel()
         panel.canChooseFiles = false
         panel.canChooseDirectories = true

@@ -50,6 +50,17 @@
                ReferencedContainer = "container:AshtynMD.xcodeproj">
             </BuildableReference>
          </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "A6E1E07DFEEA8D1E20DAB90F"
+               BuildableName = "AshtynMDUITests.xctest"
+               BlueprintName = "AshtynMDUITests"
+               ReferencedContainer = "container:AshtynMD.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
       </Testables>
       <CommandLineArguments>
       </CommandLineArguments>

@@ -141,6 +141,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Instantiating the registry installs its activation observers.
         _ = SessionRegistry.shared
+        #if DEBUG
+        if UITestLaunchConfiguration.current.isEnabled,
+           UITestLaunchConfiguration.current.opensStandalone,
+           let url = try? UITestLaunchConfiguration.standaloneFixtureURL() {
+            Task { @MainActor in
+                await Task.yield()
+                StandaloneOpenRequests.shared.requests.send(url)
+            }
+        }
+        #endif
     }
 
     func application(_ application: NSApplication, open urls: [URL]) {

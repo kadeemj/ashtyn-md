@@ -104,6 +104,11 @@ struct EditorTextView: NSViewRepresentable {
 
         init(session: DocumentSession) {
             self.session = session
+            #if DEBUG
+            if UITestLaunchConfiguration.current.isEnabled {
+                aiController.providerFactory = { UITestAIProvider() }
+            }
+            #endif
         }
 
         func configureAI(for textView: PlainTextView) {

@@ -138,6 +138,18 @@ targets:
         GENERATE_INFOPLIST_FILE: true
     dependencies:
       - target: AshtynMD
+  AshtynMDUITests:
+    type: bundle.ui-testing
+    platform: macOS
+    sources:
+      - path: AshtynMD/UITests
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.kadeem.ashtynmd.uitests
+        GENERATE_INFOPLIST_FILE: true
+        TEST_TARGET_NAME: AshtynMD
+    dependencies:
+      - target: AshtynMD
 schemes:
   AshtynMD:
     build:
@@ -149,3 +161,4 @@ schemes:
       config: Debug
       targets:
         - AshtynMDTests
+        - AshtynMDUITests
