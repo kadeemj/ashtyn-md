@@ -4,4 +4,5 @@ xcuserdata/
 DerivedData/
 build/
 /.build/
+.worktrees/
 *.dmg
