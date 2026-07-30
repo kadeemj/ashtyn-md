@@ -28,6 +28,11 @@ struct ConflictComparison: Identifiable, Equatable, Sendable {
     }
 }
 
+struct PreviewModeRequest: Equatable, Sendable {
+    let rawValue: String
+    let generation: UInt64
+}
+
 /// Editing state for one open file: content, byte-level format, dirty and
 /// conflict tracking, autosave, and crash recovery. One instance per open
 /// document; the canonical data is always the file itself.
@@ -50,10 +55,19 @@ final class DocumentSession: Identifiable {
     private(set) var pendingRecovery: RecoverySnapshot?
     /// File-size-derived editing, preview, and AI policy.
     private(set) var capabilities: DocumentCapabilities
+    private(set) var previewModeRequest: PreviewModeRequest?
     /// Live cursor/selection/scroll state, maintained by the editor view and
     /// persisted per-library on tab switches and closes. Observation-ignored:
     /// cursor movement must not invalidate SwiftUI views.
-    @ObservationIgnored var viewState = FileViewState()
+    @ObservationIgnored var viewState = FileViewState() {
+        didSet {
+            guard viewState != oldValue else { return }
+            viewStateDidChange?()
+        }
+    }
+    /// Lets the library debounce persistence while keeping editor state
+    /// changes independent from SwiftUI observation.
+    @ObservationIgnored var viewStateDidChange: (@MainActor () -> Void)?
     /// Routes programmatic source edits (e.g. a preview checkbox toggle)
     /// through the live editor so they join the native undo stack. Registered
     /// by the editor coordinator; nil when no editor is mounted.
@@ -123,6 +137,13 @@ final class DocumentSession: Identifiable {
         guard capabilities.tier == .readOnlyLarge else { return }
         openedLargeFileAnyway = true
         capabilities = capabilities.openingAnyway()
+    }
+
+    func requestPreviewMode(_ rawValue: String) {
+        previewModeRequest = PreviewModeRequest(
+            rawValue: rawValue,
+            generation: (previewModeRequest?.generation ?? 0) &+ 1
+        )
     }
 
     private static func fileByteCount(at url: URL) -> Int64 {

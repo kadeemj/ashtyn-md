@@ -1,0 +1,14 @@
+enum AccessibilityID {
+    static let onboardingChooseFolder = "onboarding.choose-folder"
+    static let sidebar = "library.sidebar"
+    static let fileList = "library.file-list"
+    static let searchField = "library.search-field"
+    static let tabBar = "document.tab-bar"
+    static let editor = "document.editor"
+    static let modePicker = "markdown.mode-picker"
+    static let renderPreview = "markdown.render-preview"
+    static let previewWebView = "markdown.preview"
+    static let openLargeFileAnyway = "document.open-anyway"
+    static let largeFileMode = "document.large-file-mode"
+    static let conflictCompare = "conflict.compare"
+}

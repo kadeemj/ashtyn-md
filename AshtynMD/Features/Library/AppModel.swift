@@ -56,6 +56,7 @@ final class AppModel {
     private var sessionFileIDs: [UUID: Int64] = [:]
     private var searchTask: Task<Void, Never>?
     private var persistTask: Task<Void, Never>?
+    private var viewStatePersistTasks: [UUID: Task<Void, Never>] = [:]
     private var isRestoringState = false
 
     var recoveryStore: RecoveryStore {
@@ -153,6 +154,8 @@ final class AppModel {
         searchTask = nil
         persistTask?.cancel()
         persistTask = nil
+        for task in viewStatePersistTasks.values { task.cancel() }
+        viewStatePersistTasks = [:]
         for session in tabs {
             session.close()
             SessionRegistry.shared.unregister(session)
@@ -265,10 +268,6 @@ final class AppModel {
         Task {
             do {
                 let session = try await DocumentSession.open(fileURL: url, recoveryStore: recovery)
-                SessionRegistry.shared.register(session)
-                captureActiveViewState()
-                tabs.append(session)
-                activeTabID = session.id
 
                 if let store, let relative = relativePath(of: url) {
                     try? await store.markOpened(relativePath: relative)
@@ -277,8 +276,16 @@ final class AppModel {
                         if let saved = try? await store.viewState(forFileID: record.id) {
                             session.viewState = saved
                         }
+                        configureViewStatePersistence(
+                            for: session,
+                            fileID: record.id
+                        )
                     }
                 }
+                SessionRegistry.shared.register(session)
+                captureActiveViewState()
+                tabs.append(session)
+                activeTabID = session.id
                 openError = nil
                 persistUIStateSoon()
             } catch {
@@ -322,8 +329,26 @@ final class AppModel {
 
     private func persistViewState(for session: DocumentSession) {
         guard let store, let fileID = sessionFileIDs[session.id] else { return }
+        viewStatePersistTasks[session.id]?.cancel()
+        viewStatePersistTasks[session.id] = nil
         let state = session.viewState
         Task { try? await store.saveViewState(state, forFileID: fileID) }
+    }
+
+    private func configureViewStatePersistence(
+        for session: DocumentSession,
+        fileID: Int64
+    ) {
+        session.viewStateDidChange = { [weak self, weak session] in
+            guard let self, let session else { return }
+            self.viewStatePersistTasks[session.id]?.cancel()
+            let store = self.store
+            let state = session.viewState
+            self.viewStatePersistTasks[session.id] = Task {
+                guard !Task.isCancelled else { return }
+                try? await store?.saveViewState(state, forFileID: fileID)
+            }
+        }
     }
 
     // MARK: - File operations
@@ -438,7 +463,6 @@ final class AppModel {
         persistTask?.cancel()
         let state = currentUIState()
         persistTask = Task {
-            try? await Task.sleep(for: .milliseconds(400))
             guard !Task.isCancelled else { return }
             if let data = try? JSONEncoder().encode(state),
                let json = String(data: data, encoding: .utf8) {

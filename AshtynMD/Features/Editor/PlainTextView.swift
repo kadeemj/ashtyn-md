@@ -17,7 +17,16 @@ final class PlainTextView: NSTextView {
     var imageInsertionHandler: ((Data, String) -> String?)?
     /// Streamed AI suggestion shown at the caret; never part of the document.
     var ghostText: String? {
-        didSet { needsDisplay = true }
+        didSet {
+            needsDisplay = true
+            setAccessibilityHelp(
+                ghostText.map { "AI suggestion: \($0)" }
+            )
+            setAccessibilityLabel(
+                ghostText.map { "Document editor, AI suggestion: \($0)" }
+                    ?? "Document editor"
+            )
+        }
     }
     /// Returns true when a visible ghost suggestion was accepted.
     var ghostAcceptHandler: (() -> Bool)?
@@ -46,6 +55,16 @@ final class PlainTextView: NSTextView {
     }
 
     // MARK: - Paste
+
+    override var readablePasteboardTypes: [NSPasteboard.PasteboardType] {
+        var types = super.readablePasteboardTypes
+        guard languageDefinition?.id == .markdown else { return types }
+        for type in [NSPasteboard.PasteboardType.png, .tiff, .fileURL]
+        where !types.contains(type) {
+            types.append(type)
+        }
+        return types
+    }
 
     /// Pasting requests the pasteboard's plain string, preserves its
     /// characters and line breaks, and normalizes internal newlines to `\n`.

@@ -1,6 +1,7 @@
 #if DEBUG
 import Foundation
 
+@MainActor
 struct UITestLaunchConfiguration {
     let isEnabled: Bool
     let resetsLibrary: Bool
@@ -9,6 +10,7 @@ struct UITestLaunchConfiguration {
 
     private static let root = FileManager.default.temporaryDirectory
         .appendingPathComponent("AshtynMD-UITests", isDirectory: true)
+    private static var hasResetLibrary = false
 
     static var current: UITestLaunchConfiguration {
         let arguments = Set(ProcessInfo.processInfo.arguments)
@@ -22,7 +24,8 @@ struct UITestLaunchConfiguration {
 
     static func prepareFixtureLibrary() throws -> URL {
         let library = root.appendingPathComponent("Library", isDirectory: true)
-        if current.resetsLibrary {
+        if current.resetsLibrary && !hasResetLibrary {
+            hasResetLibrary = true
             let metadata = AppSupportPaths.libraryDirectory(forRoot: library)
             if FileManager.default.fileExists(atPath: metadata.path) {
                 try FileManager.default.removeItem(at: metadata)
@@ -68,6 +71,7 @@ struct UITestLaunchConfiguration {
         }
         return url
     }
+
 }
 
 struct UITestAIProvider: AICompletionProvider {

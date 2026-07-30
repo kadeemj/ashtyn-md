@@ -33,6 +33,8 @@ struct MarkdownPreviewView: NSViewRepresentable {
         webView.navigationDelegate = context.coordinator
         webView.setValue(false, forKey: "drawsBackground")
         webView.allowsMagnification = true
+        webView.setAccessibilityIdentifier(AccessibilityID.previewWebView)
+        webView.setAccessibilityLabel("Markdown preview")
         context.coordinator.webView = webView
         return webView
     }

@@ -41,6 +41,8 @@ struct EditorTextView: NSViewRepresentable {
         textView.autoresizingMask = [.width]
         textView.textContainerInset = NSSize(width: 8, height: 10)
         textView.delegate = context.coordinator
+        textView.setAccessibilityIdentifier(AccessibilityID.editor)
+        textView.setAccessibilityLabel("Document editor")
 
         scrollView.documentView = textView
         context.coordinator.textView = textView
@@ -65,6 +67,10 @@ struct EditorTextView: NSViewRepresentable {
         context.coordinator.applyProfile(profile, theme: theme, for: session.languageID, in: scrollView)
         context.coordinator.observeScrolling(of: scrollView)
         context.coordinator.restoreViewState(in: scrollView)
+        DispatchQueue.main.async { [weak textView] in
+            guard let textView, textView.isEditable else { return }
+            textView.window?.makeFirstResponder(textView)
+        }
         return scrollView
     }
 

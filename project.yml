@@ -143,6 +143,7 @@ targets:
     platform: macOS
     sources:
       - path: AshtynMD/UITests
+      - path: AshtynMD/App/AccessibilityIdentifiers.swift
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.kadeem.ashtynmd.uitests

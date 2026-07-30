@@ -45,6 +45,7 @@ struct EditorContainerView: View {
     let session: DocumentSession
     var previewContext: PreviewContext?
 
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     private let profilesStore = EditorProfilesStore.shared
 
     @State private var previewMode: MarkdownPreviewMode?
@@ -102,6 +103,12 @@ struct EditorContainerView: View {
             session.viewState.previewMode = activeMode?.rawValue
             scheduleRender(immediate: true)
         }
+        .onChange(of: session.previewModeRequest) {
+            guard let request = session.previewModeRequest,
+                  let mode = MarkdownPreviewMode(rawValue: request.rawValue)
+            else { return }
+            previewMode = mode
+        }
         .onDisappear {
             renderTask?.cancel()
         }
@@ -120,11 +127,15 @@ struct EditorContainerView: View {
             set: { previewMode = $0 }
         )) {
             ForEach(MarkdownPreviewMode.allCases) { mode in
-                Label(mode.label, systemImage: mode.icon).tag(mode)
+                Label(mode.label, systemImage: mode.icon)
+                    .accessibilityLabel(mode.label)
+                    .tag(mode)
             }
         }
         .pickerStyle(.segmented)
+        .focusable()
         .help("Switch between editing, split, and preview")
+        .accessibilityIdentifier(AccessibilityID.modePicker)
     }
 
     // MARK: - Layout
@@ -194,6 +205,7 @@ struct EditorContainerView: View {
                         scheduleRender(force: true)
                     }
                     .disabled(isRenderingPreview)
+                    .accessibilityIdentifier(AccessibilityID.renderPreview)
                 }
                 .padding(24)
                 .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
@@ -293,8 +305,10 @@ struct EditorContainerView: View {
                         scheduleRender(force: true)
                     }
                     .disabled(isRenderingPreview)
+                    .accessibilityIdentifier(AccessibilityID.renderPreview)
                 }
             }
+            .accessibilityIdentifier(AccessibilityID.largeFileMode)
         case .readOnlyLarge:
             banner(
                 icon: "lock.doc",
@@ -304,6 +318,7 @@ struct EditorContainerView: View {
                 Button("Open Anyway") {
                     session.openLargeFileAnyway()
                 }
+                .accessibilityIdentifier(AccessibilityID.openLargeFileAnyway)
             }
         }
     }
@@ -328,6 +343,7 @@ struct EditorContainerView: View {
             Button("Compare") {
                 comparison = session.conflictComparison()
             }
+            .accessibilityIdentifier(AccessibilityID.conflictCompare)
             Button("Use Disk") { session.resolveConflictUsingDisk() }
             Button("Keep Mine") { Task { await session.resolveConflictKeepingMine() } }
             Button("Save Copy…") { saveCopy() }
@@ -370,7 +386,7 @@ struct EditorContainerView: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
-        .background(.bar)
+        .background { barBackground }
         .overlay(alignment: .bottom) { Divider() }
     }
 
@@ -390,8 +406,17 @@ struct EditorContainerView: View {
         .foregroundStyle(.secondary)
         .padding(.horizontal, 12)
         .padding(.vertical, 4)
-        .background(.bar)
+        .background { barBackground }
         .overlay(alignment: .top) { Divider() }
+    }
+
+    @ViewBuilder
+    private var barBackground: some View {
+        if reduceTransparency {
+            Color(nsColor: .controlBackgroundColor)
+        } else {
+            Rectangle().fill(.bar)
+        }
     }
 
     /// The active provider is visible whenever automatic completion is on;

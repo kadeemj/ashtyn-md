@@ -46,6 +46,7 @@ struct OnboardingView: View {
             }
             .keyboardShortcut(.defaultAction)
             .controlSize(.large)
+            .accessibilityIdentifier(AccessibilityID.onboardingChooseFolder)
             if let error = appModel.openError {
                 Text(error)
                     .font(.callout)
@@ -110,6 +111,7 @@ struct SidebarView: View {
             }
         }
         .listStyle(.sidebar)
+        .accessibilityIdentifier(AccessibilityID.sidebar)
     }
 
     private func folderRow(_ node: FolderNode, isRoot: Bool) -> some View {
@@ -168,6 +170,7 @@ struct FileListView: View {
                 }
         }
         .navigationTitle(listTitle)
+        .accessibilityIdentifier(AccessibilityID.fileList)
         .toolbar {
             ToolbarItem {
                 sortMenu
@@ -262,10 +265,17 @@ struct FileRecordRow: View {
                 Image(systemName: "star.fill")
                     .font(.caption)
                     .foregroundStyle(.yellow)
-                    .accessibilityLabel("Favorite")
+                    .accessibilityHidden(true)
             }
         }
         .padding(.vertical, 2)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(record.name)
+        .accessibilityValue(
+            "\(LanguageDefinition.definition(for: record.languageID).displayName), "
+                + "\(record.modifiedAt.formatted(date: .abbreviated, time: .shortened)), "
+                + (record.isFavorite ? "Favorite" : "Not favorite")
+        )
     }
 }
 
@@ -281,6 +291,13 @@ struct SearchColumnView: View {
                 .focused($searchFieldFocused)
                 .padding(10)
                 .accessibilityLabel("Library search")
+                .accessibilityIdentifier(AccessibilityID.searchField)
+                .onSubmit {
+                    guard let first = appModel.searchResults.first,
+                          let url = appModel.absoluteURL(of: first.record)
+                    else { return }
+                    appModel.openFile(at: url)
+                }
             Divider()
             List(appModel.searchResults, selection: selectionBinding) { result in
                 VStack(alignment: .leading, spacing: 2) {
@@ -298,7 +315,14 @@ struct SearchColumnView: View {
                         .lineLimit(1)
                 }
                 .tag(result.record.relativePath)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(result.record.name)
+                .accessibilityValue(
+                    result.snippet.replacingOccurrences(of: "⟦", with: "")
+                        .replacingOccurrences(of: "⟧", with: "")
+                )
             }
+            .accessibilityIdentifier(AccessibilityID.fileList)
             .overlay {
                 if appModel.searchResults.isEmpty && !appModel.searchQuery.isEmpty {
                     ContentUnavailableView.search(text: appModel.searchQuery)
@@ -376,6 +400,7 @@ extension DocumentAreaView {
 
 struct TabBarView: View {
     @Environment(AppModel.self) private var appModel
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
@@ -391,7 +416,17 @@ struct TabBarView: View {
             }
         }
         .frame(height: 30)
-        .background(.bar)
+        .background { barBackground }
+        .accessibilityIdentifier(AccessibilityID.tabBar)
+    }
+
+    @ViewBuilder
+    private var barBackground: some View {
+        if reduceTransparency {
+            Color(nsColor: .controlBackgroundColor)
+        } else {
+            Rectangle().fill(.bar)
+        }
     }
 }
 

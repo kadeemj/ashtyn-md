@@ -94,6 +94,26 @@ struct AshtynMDApp: App {
                 ))
                 .disabled(appModel.libraryRoot == nil)
 
+                Divider()
+
+                Button("Editor Mode") {
+                    appModel.activeSession?.requestPreviewMode("editor")
+                }
+                .keyboardShortcut("1", modifiers: [.command, .option])
+                .disabled(appModel.activeSession?.languageID != .markdown)
+
+                Button("Split Mode") {
+                    appModel.activeSession?.requestPreviewMode("split")
+                }
+                .keyboardShortcut("2", modifiers: [.command, .option])
+                .disabled(appModel.activeSession?.languageID != .markdown)
+
+                Button("Preview Mode") {
+                    appModel.activeSession?.requestPreviewMode("preview")
+                }
+                .keyboardShortcut("3", modifiers: [.command, .option])
+                .disabled(appModel.activeSession?.languageID != .markdown)
+
                 Menu("Language") {
                     Picker("Language", selection: languageOverrideBinding) {
                         Text("Automatic").tag(LanguageID?.none)
