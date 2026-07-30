@@ -3,6 +3,7 @@ xcuserdata/
 *.xcuserstate
 DerivedData/
 build/
+dist/
 /.build/
 .worktrees/
 *.dmg

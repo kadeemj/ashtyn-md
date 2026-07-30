@@ -9,12 +9,18 @@ settings:
     SWIFT_VERSION: "6.0"
     SWIFT_STRICT_CONCURRENCY: complete
     MACOSX_DEPLOYMENT_TARGET: "14.0"
-    CODE_SIGN_STYLE: Manual
-    CODE_SIGN_IDENTITY: "-"
-    DEVELOPMENT_TEAM: ""
   configs:
+    Debug:
+      CODE_SIGN_STYLE: Manual
+      CODE_SIGN_IDENTITY: "-"
+      DEVELOPMENT_TEAM: ""
     Release:
+      ARCHS: "arm64 x86_64"
+      ONLY_ACTIVE_ARCH: false
       ENABLE_HARDENED_RUNTIME: true
+      CODE_SIGN_STYLE: Manual
+      CODE_SIGN_IDENTITY: "Developer ID Application"
+      DEVELOPMENT_TEAM: JUQMKZZ7TJ
 packages:
   swift-markdown:
     url: https://github.com/swiftlang/swift-markdown
