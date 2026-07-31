@@ -173,6 +173,7 @@ schemes:
       config: Debug
       environmentVariables:
         ASHTYN_PERFORMANCE_TESTS: "$(ASHTYN_PERFORMANCE_TESTS)"
+        ASHTYN_SNAPSHOT: "$(ASHTYN_SNAPSHOT)"
       targets:
         - AshtynMDTests
         - AshtynMDUITests

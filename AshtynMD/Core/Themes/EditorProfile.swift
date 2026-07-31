@@ -51,7 +51,9 @@ struct EditorProfile: Codable, Sendable, Equatable {
     var rendersTagPills: Bool = true
     var focusModeEnabled: Bool = false
     var typewriterModeEnabled: Bool = false
-    var paragraphSpacing: Double = 8
+    /// Extra space after a paragraph. Small because a blank source line
+    /// already provides most of the gap.
+    var paragraphSpacing: Double = 4
     /// Caps the text column width in points; nil fills the view.
     var contentWidthLimit: Double?
 
@@ -156,7 +158,7 @@ struct EditorProfile: Codable, Sendable, Equatable {
         typewriterModeEnabled = try container.decodeIfPresent(
             Bool.self, forKey: .typewriterModeEnabled
         ) ?? false
-        paragraphSpacing = try container.decodeIfPresent(Double.self, forKey: .paragraphSpacing) ?? 8
+        paragraphSpacing = try container.decodeIfPresent(Double.self, forKey: .paragraphSpacing) ?? 4
         contentWidthLimit = try container.decodeIfPresent(Double.self, forKey: .contentWidthLimit)
     }
 }

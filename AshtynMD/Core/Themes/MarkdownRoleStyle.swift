@@ -72,7 +72,9 @@ struct MarkdownRoleStyle: Codable, Sendable, Equatable {
         case .frontMatter:
             return MarkdownRoleStyle(sizeMultiple: 0.9, isMonospaced: true, opacity: 0.7)
         case .thematicBreak:
-            return MarkdownRoleStyle(opacity: 0.5)
+            // The rule color is already muted; dimming it further made the
+            // divider nearly invisible against a dark background.
+            return MarkdownRoleStyle()
         // Markers deliberately keep the body metrics. Changing their size
         // would reflow the line every time the caret moves on or off it,
         // which is the jitter that makes reveal-on-caret-line unusable.

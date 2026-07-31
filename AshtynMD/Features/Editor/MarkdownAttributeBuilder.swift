@@ -72,8 +72,13 @@ struct MarkdownAttributeBuilder {
 
         switch block.kind {
         case .heading(let level):
-            style.paragraphSpacingBefore = profile.fontSize * (level <= 2 ? 0.9 : 0.6)
+            style.paragraphSpacingBefore = profile.fontSize * (level <= 2 ? 0.35 : 0.2)
             style.paragraphSpacing = profile.paragraphSpacing * 0.5
+        case .blank:
+            // A blank source line is already the paragraph gap. Adding spacing
+            // on top of it double-counts and leaves the document airy.
+            style.paragraphSpacing = 0
+            style.paragraphSpacingBefore = 0
         case .listItem(let depth, _, _):
             // headIndent aligns wrapped text under the content, not the marker.
             style.firstLineHeadIndent = CGFloat(depth) * Self.indentUnit

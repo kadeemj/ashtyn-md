@@ -70,6 +70,11 @@
             value = "$(ASHTYN_PERFORMANCE_TESTS)"
             isEnabled = "YES">
          </EnvironmentVariable>
+         <EnvironmentVariable
+            key = "ASHTYN_SNAPSHOT"
+            value = "$(ASHTYN_SNAPSHOT)"
+            isEnabled = "YES">
+         </EnvironmentVariable>
       </EnvironmentVariables>
    </TestAction>
    <LaunchAction

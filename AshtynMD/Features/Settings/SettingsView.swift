@@ -93,8 +93,68 @@ struct EditorSettingsView: View {
         Toggle("Indent with Tabs", isOn: binding.usesTabs)
         Toggle("Wrap Lines", isOn: binding.wrapsLines)
 
+        if language == .markdown {
+            DisclosureGroup("Markdown Presentation") {
+                markdownEditor(profile: binding)
+            }
+        }
+
         DisclosureGroup("Token Colors") {
             tokenColorEditor(for: language, profile: binding)
+        }
+    }
+
+    /// Options that only mean anything for a prose document.
+    @ViewBuilder
+    private func markdownEditor(profile: Binding<EditorProfile>) -> some View {
+        TextField("Code Font Family", text: profile.monospaceFontFamily)
+            .help("Used for code spans and fenced blocks inside a note.")
+
+        Picker("Markdown Markers", selection: profile.markerVisibility) {
+            Text("Always Visible").tag(MarkerVisibility.always)
+            Text("Reveal on Caret Line").tag(MarkerVisibility.caretLine)
+            Text("Hidden").tag(MarkerVisibility.hidden)
+        }
+        .help("Whether the **, #, and []() characters are dimmed or shown.")
+
+        Toggle("Show Tags as Pills", isOn: profile.rendersTagPills)
+        Toggle("Focus Mode", isOn: profile.focusModeEnabled)
+            .help("Dims every paragraph except the one holding the caret.")
+        Toggle("Typewriter Mode", isOn: profile.typewriterModeEnabled)
+            .help("Keeps the caret line vertically centered while typing.")
+
+        HStack {
+            Text("Paragraph Spacing")
+            Spacer()
+            Stepper(value: profile.paragraphSpacing, in: 0...24, step: 1) {
+                Text("\(profile.wrappedValue.paragraphSpacing, format: .number) pt")
+                    .monospacedDigit()
+            }
+        }
+
+        DisclosureGroup("Heading Sizes") {
+            ForEach(Array(profile.wrappedValue.headingScales.indices), id: \.self) { index in
+                HStack {
+                    Text("Heading \(index + 1)")
+                    Spacer()
+                    Stepper(
+                        value: Binding(
+                            get: { profile.wrappedValue.headingScales[index] },
+                            set: { newValue in
+                                var updated = profile.wrappedValue
+                                updated.headingScales[index] = newValue
+                                profile.wrappedValue = updated
+                            }
+                        ),
+                        in: 1.0...3.0,
+                        step: 0.05
+                    ) {
+                        let scale = profile.wrappedValue.headingScales[index]
+                        Text("\(scale, format: .number.precision(.fractionLength(2)))×")
+                            .monospacedDigit()
+                    }
+                }
+            }
         }
     }
 
