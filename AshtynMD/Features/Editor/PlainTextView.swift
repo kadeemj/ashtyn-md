@@ -33,6 +33,12 @@ final class PlainTextView: NSTextView {
     var ghostDismissHandler: (() -> Void)?
     /// Manual AI completion (⌃⌥Space).
     var aiCompletionRequestHandler: (() -> Void)?
+    /// Set for Markdown documents only. When present it owns text-storage
+    /// attributes and supplies typing attributes; code documents leave it nil
+    /// and keep the temporary-attribute highlight path.
+    var markdownStyler: MarkdownStyler?
+    /// Palette in effect, for the current-line and tag-pill drawing.
+    var palette: EditorPalette?
 
     @objc func requestAICompletion(_ sender: Any?) {
         aiCompletionRequestHandler?()
@@ -146,6 +152,51 @@ final class PlainTextView: NSTextView {
 
     override func drawBackground(in rect: NSRect) {
         super.drawBackground(in: rect)
+        drawTagPills(in: rect)
+        drawCurrentLineHighlight(in: rect)
+    }
+
+    /// Rounded fills behind `#tag` runs.
+    ///
+    /// Drawn rather than expressed as an attribute because `.backgroundColor`
+    /// gives square corners with no padding. Ranges are read from the styler
+    /// and geometry is recomputed here, so pills stay correct across scrolling,
+    /// resizing, and wrap changes without caching rects.
+    private func drawTagPills(in rect: NSRect) {
+        guard let markdownStyler, profile.rendersTagPills,
+              let palette,
+              let layoutManager, let textContainer,
+              !markdownStyler.tagRanges.isEmpty else { return }
+
+        let fill = palette.tagPillBackground.nsColor
+        let length = content.length
+        for tagRange in markdownStyler.tagRanges {
+            let clamped = NSIntersectionRange(tagRange, NSRange(location: 0, length: length))
+            guard clamped.length > 0 else { continue }
+            let glyphRange = layoutManager.glyphRange(
+                forCharacterRange: clamped, actualCharacterRange: nil
+            )
+            layoutManager.enumerateEnclosingRects(
+                forGlyphRange: glyphRange,
+                withinSelectedGlyphRange: NSRange(location: NSNotFound, length: 0),
+                in: textContainer
+            ) { fragment, _ in
+                var pill = fragment.offsetBy(
+                    dx: self.textContainerOrigin.x, dy: self.textContainerOrigin.y
+                )
+                pill = pill.insetBy(dx: -1, dy: 1)
+                guard pill.intersects(rect), pill.height > 0 else { return }
+                fill.setFill()
+                NSBezierPath(
+                    roundedRect: pill,
+                    xRadius: pill.height / 2,
+                    yRadius: pill.height / 2
+                ).fill()
+            }
+        }
+    }
+
+    private func drawCurrentLineHighlight(in rect: NSRect) {
         guard selectedRange().length == 0,
               window?.firstResponder === self,
               let layoutManager, let textContainer else { return }
@@ -168,7 +219,9 @@ final class PlainTextView: NSTextView {
         highlightRect.origin.y += textContainerInset.height
         guard highlightRect.intersects(rect) else { return }
 
-        NSColor.selectedTextBackgroundColor.withAlphaComponent(0.14).setFill()
+        let highlight = palette?.currentLine.nsColor
+            ?? NSColor.selectedTextBackgroundColor.withAlphaComponent(0.14)
+        highlight.setFill()
         highlightRect.fill()
     }
 
@@ -632,9 +685,24 @@ final class PlainTextView: NSTextView {
     }
 
     private func defaultTypingAttributes() -> [NSAttributedString.Key: Any] {
+        // In a Markdown document the styler decides, so an edit inside a bold
+        // run keeps typing bold instead of snapping back to the body font.
+        if let markdownStyler {
+            return markdownStyler.typingAttributes(at: selectedRange().location)
+        }
         var attributes = typingAttributes
-        attributes[.foregroundColor] = NSColor.textColor
+        attributes[.foregroundColor] = palette?.foreground.nsColor ?? NSColor.textColor
         return attributes
+    }
+
+    override func setSelectedRanges(
+        _ ranges: [NSValue],
+        affinity: NSSelectionAffinity,
+        stillSelecting: Bool
+    ) {
+        super.setSelectedRanges(ranges, affinity: affinity, stillSelecting: stillSelecting)
+        guard !stillSelecting, let markdownStyler else { return }
+        typingAttributes = markdownStyler.typingAttributes(at: selectedRange().location)
     }
 
     private func linesInSelection() -> [String] {

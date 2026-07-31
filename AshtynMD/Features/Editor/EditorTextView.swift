@@ -106,6 +106,15 @@ struct EditorTextView: NSViewRepresentable {
         private let highlighter = SyntaxHighlighter()
         private var highlightTask: Task<Void, Never>?
         private var editSequence: UInt64 = 0
+        /// Range of the most recent character edit, captured from the storage
+        /// delegate so textDidChange knows what to restyle.
+        private var lastEditedRange: NSRange?
+        /// Non-nil only for Markdown documents.
+        var markdownStyler: MarkdownStyler?
+        var typewriterScroller: TypewriterScroller?
+        /// Suppresses view-state persistence while the typewriter scroll runs,
+        /// which would otherwise rewrite the stored offset on every keystroke.
+        var isPerformingTypewriterScroll = false
         let aiController = AICompletionController()
 
         init(session: DocumentSession) {
@@ -177,6 +186,12 @@ struct EditorTextView: NSViewRepresentable {
         func textDidChange(_ notification: Notification) {
             guard !isApplyingProgrammaticChange, let textView else { return }
             session.updateText(textView.string)
+            // Restyle here rather than from didProcessEditing: this fires in
+            // the same runloop turn once processing has finished, so writing
+            // attributes cannot re-enter the storage mid-edit.
+            if let markdownStyler {
+                markdownStyler.restyle(afterEditIn: lastEditedRange ?? textView.selectedRange())
+            }
             // Any edit cancels a stale AI request; automatic completion
             // requires an empty selection and finished input composition.
             aiController.noteEdit(
@@ -196,6 +211,9 @@ struct EditorTextView: NSViewRepresentable {
             session.viewState.cursorLocation = range.location
             session.viewState.selectionLength = range.length
             aiController.noteCursorMovement()
+            // Markers reveal on the caret's block, and focus mode follows it.
+            markdownStyler?.selectionDidChange(to: range)
+            typewriterScroller?.caretDidMove()
             // Current-line highlight follows the caret.
             textView.needsDisplay = true
         }
@@ -240,11 +258,12 @@ struct EditorTextView: NSViewRepresentable {
             ) { [weak self, weak scrollView] _ in
                 MainActor.assumeIsolated {
                     guard let self, let scrollView else { return }
-                    if !self.isApplyingProgrammaticChange {
+                    if !self.isApplyingProgrammaticChange, !self.isPerformingTypewriterScroll {
                         self.session.viewState.scrollOffset = scrollView.contentView.bounds.origin.y
                     }
                     // Newly revealed lines need colors.
                     self.scheduleHighlight()
+                    self.markdownStyler?.restyleVisible()
                 }
             }
         }
@@ -259,10 +278,14 @@ struct EditorTextView: NSViewRepresentable {
             range editedRange: NSRange,
             changeInLength delta: Int
         ) {
+            // Attribute-only edits are filtered here, which is what stops the
+            // styler's own writes from feeding back into the parser.
             guard editedMask.contains(.editedCharacters) else { return }
             let newText = textStorage.string
             MainActor.assumeIsolated {
                 editSequence &+= 1
+                lastEditedRange = editedRange
+                guard appliedLanguage != .markdown else { return }
                 let sequence = editSequence
                 let highlighter = highlighter
                 Task {
@@ -286,6 +309,9 @@ struct EditorTextView: NSViewRepresentable {
 
         func scheduleHighlight() {
             highlightTask?.cancel()
+            // Markdown is styled from the text storage by MarkdownStyler; the
+            // temporary-attribute path would only fight it.
+            guard appliedLanguage != .markdown else { return }
             guard let textView else { return }
             let visible = visibleCharacterRange(of: textView)
             let highlighter = highlighter
@@ -385,7 +411,14 @@ struct EditorTextView: NSViewRepresentable {
             textView.setSelectedRange(NSRange(location: location, length: 0))
             // A full replacement is not an undoable user edit.
             textView.undoManager?.removeAllActions()
-            reapplyTypingAttributes()
+            // textDidChange is suppressed above, so the styler has to be told
+            // explicitly that the whole buffer changed.
+            if let markdownStyler {
+                markdownStyler.applyBaseAttributes()
+                markdownStyler.restyleAll()
+            } else {
+                applyCodeBaseAttributes()
+            }
         }
 
         func applyProfile(
@@ -405,17 +438,71 @@ struct EditorTextView: NSViewRepresentable {
             textView.languageDefinition = LanguageDefinition.definition(for: language)
             textView.profile = profile
 
+            let isDark = textView.effectiveAppearance
+                .bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+            let palette = effectivePalette(isDark: isDark)
+            textView.palette = palette
+            applyChrome(palette, theme: theme, textView: textView, scrollView: scrollView)
+
             let size = CGFloat(profile.fontSize)
             let font = NSFont(name: profile.fontFamily, size: size)
                 ?? .monospacedSystemFont(ofSize: size, weight: .regular)
             textView.font = font
 
             setWrapping(wrapOverride ?? profile.wrapsLines, textView: textView, scrollView: scrollView)
-            reapplyTypingAttributes()
-            scheduleHighlight()
+
+            if language == .markdown {
+                // Markdown styling lives in the text storage, so the uniform
+                // whole-buffer stomp in applyCodeBaseAttributes() would erase
+                // it. Hand the buffer to the styler instead.
+                let styler = markdownStyler ?? MarkdownStyler(
+                    textView: textView, profile: profile, palette: palette
+                )
+                markdownStyler = styler
+                textView.markdownStyler = styler
+                styler.profile = profile
+                styler.palette = palette
+                styler.applyBaseAttributes()
+                styler.restyleAll()
+                // Line numbers are noise in a prose editor.
+                scrollView.rulersVisible = false
+            } else {
+                markdownStyler = nil
+                textView.markdownStyler = nil
+                scrollView.rulersVisible = true
+                applyCodeBaseAttributes()
+                scheduleHighlight()
+            }
         }
 
-        private func reapplyTypingAttributes() {
+        /// Background, caret, and selection come from the palette so a theme
+        /// can look like something other than the system window.
+        private func applyChrome(
+            _ palette: EditorPalette,
+            theme: EditorTheme,
+            textView: PlainTextView,
+            scrollView: NSScrollView
+        ) {
+            textView.drawsBackground = true
+            textView.backgroundColor = palette.background.nsColor
+            scrollView.drawsBackground = true
+            scrollView.backgroundColor = palette.background.nsColor
+            textView.insertionPointColor = palette.caret.nsColor
+            textView.selectedTextAttributes = [
+                .backgroundColor: palette.selection.nsColor
+            ]
+            if let forced = theme.forcedAppearance {
+                // Scrollers and the ruler follow the theme, not the window.
+                scrollView.appearance = NSAppearance(
+                    named: forced == .dark ? .darkAqua : .aqua
+                )
+            } else {
+                scrollView.appearance = nil
+            }
+        }
+
+        /// The uniform-font path, for code documents only.
+        private func applyCodeBaseAttributes() {
             guard let textView, let profile = appliedProfile else { return }
             let paragraph = NSMutableParagraphStyle()
             paragraph.lineHeightMultiple = profile.lineHeightMultiple
