@@ -34,6 +34,23 @@ enum SQLiteValue: Sendable {
 final class SQLiteDatabase {
     private var handle: OpaquePointer?
 
+    /// Compiled statements, keyed by SQL text. Preparing is the dominant cost
+    /// of the indexer's per-file work, so statements are reused across calls
+    /// and only recompiled when the schema changes.
+    private var statementCache: [String: OpaquePointer] = [:]
+    /// Insertion/most-recent-use order for `statementCache`, oldest first.
+    private var statementOrder: [String] = []
+    /// SQL currently being stepped. A reentrant call with the same text gets a
+    /// fresh uncached statement instead of corrupting the in-flight cursor.
+    private var statementsInUse: Set<String> = []
+
+    static let statementCacheCapacity = 64
+
+    /// Total number of `sqlite3_prepare_v2` calls. Test observability.
+    private(set) var statementPrepareCount = 0
+
+    var cachedStatementCount: Int { statementCache.count }
+
     init(path: String) throws {
         var db: OpaquePointer?
         let flags = SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE
@@ -53,6 +70,7 @@ final class SQLiteDatabase {
     /// Closes the connection. Safe to call more than once.
     func close() throws {
         guard let handle else { return }
+        flushStatementCache()
         let result = sqlite3_close_v2(handle)
         guard result == SQLITE_OK else {
             throw SQLiteError.stepFailed(
@@ -73,8 +91,16 @@ final class SQLiteDatabase {
     }
 
     /// Runs one or more semicolon-separated statements with no parameters.
+    ///
+    /// Anything that is not plain transaction control is assumed to be able to
+    /// change the schema, so the statement cache is flushed first. BEGIN,
+    /// COMMIT, and ROLLBACK are exempt — they run around every indexer write
+    /// and flushing there would defeat the cache entirely.
     func executeScript(_ sql: String) throws {
         let handle = try openHandle()
+        if !Self.isTransactionControl(sql) {
+            flushStatementCache()
+        }
         guard sqlite3_exec(handle, sql, nil, nil, nil) == SQLITE_OK else {
             throw SQLiteError.stepFailed(lastMessage, sql: sql)
         }
@@ -82,9 +108,9 @@ final class SQLiteDatabase {
 
     /// Runs a single statement with positional `?` parameters.
     func run(_ sql: String, _ parameters: [SQLiteValue] = []) throws {
-        let statement = try prepare(sql, parameters)
-        defer { sqlite3_finalize(statement) }
-        let result = sqlite3_step(statement)
+        let lease = try prepare(sql, parameters)
+        defer { release(lease) }
+        let result = sqlite3_step(lease.statement)
         guard result == SQLITE_DONE || result == SQLITE_ROW else {
             throw SQLiteError.stepFailed(lastMessage, sql: sql)
         }
@@ -96,13 +122,13 @@ final class SQLiteDatabase {
         _ parameters: [SQLiteValue] = [],
         transform: (SQLiteRow) throws -> T
     ) throws -> [T] {
-        let statement = try prepare(sql, parameters)
-        defer { sqlite3_finalize(statement) }
+        let lease = try prepare(sql, parameters)
+        defer { release(lease) }
         var results: [T] = []
         while true {
-            let result = sqlite3_step(statement)
+            let result = sqlite3_step(lease.statement)
             if result == SQLITE_ROW {
-                results.append(try transform(SQLiteRow(statement: statement)))
+                results.append(try transform(SQLiteRow(statement: lease.statement)))
             } else if result == SQLITE_DONE {
                 break
             } else {
@@ -110,6 +136,25 @@ final class SQLiteDatabase {
             }
         }
         return results
+    }
+
+    private static func isTransactionControl(_ sql: String) -> Bool {
+        let head = sql
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .uppercased()
+        for keyword in ["BEGIN", "COMMIT", "ROLLBACK", "END", "SAVEPOINT", "RELEASE"]
+        where head.hasPrefix(keyword) {
+            return true
+        }
+        return false
+    }
+
+    private func flushStatementCache() {
+        for statement in statementCache.values {
+            sqlite3_finalize(statement)
+        }
+        statementCache.removeAll()
+        statementOrder.removeAll()
     }
 
     var lastInsertRowID: Int64 {
@@ -139,13 +184,44 @@ final class SQLiteDatabase {
         }
     }
 
-    private func prepare(_ sql: String, _ parameters: [SQLiteValue]) throws -> OpaquePointer {
+    /// A borrowed statement. Cached leases go back to the pool on release;
+    /// uncached ones (reentrant calls) are finalized instead.
+    private struct StatementLease {
+        let sql: String
+        let statement: OpaquePointer
+        let isCached: Bool
+    }
+
+    private func prepare(_ sql: String, _ parameters: [SQLiteValue]) throws -> StatementLease {
         let handle = try openHandle()
         var statement: OpaquePointer?
-        guard sqlite3_prepare_v2(handle, sql, -1, &statement, nil) == SQLITE_OK,
-              let statement else {
-            throw SQLiteError.prepareFailed(lastMessage, sql: sql)
+        var isCached = false
+
+        if !statementsInUse.contains(sql), let cached = statementCache[sql] {
+            sqlite3_reset(cached)
+            sqlite3_clear_bindings(cached)
+            statement = cached
+            isCached = true
+            touch(sql)
+        } else {
+            guard sqlite3_prepare_v2(handle, sql, -1, &statement, nil) == SQLITE_OK,
+                  statement != nil else {
+                if let statement { sqlite3_finalize(statement) }
+                throw SQLiteError.prepareFailed(lastMessage, sql: sql)
+            }
+            statementPrepareCount += 1
+            // Only the first compilation of a given SQL text enters the cache;
+            // a reentrant duplicate stays private to its call.
+            if !statementsInUse.contains(sql) && statementCache[sql] == nil {
+                statementCache[sql] = statement
+                statementOrder.append(sql)
+                isCached = true
+                evictIfNeeded()
+            }
         }
+
+        guard let statement else { throw SQLiteError.prepareFailed(lastMessage, sql: sql) }
+
         for (index, value) in parameters.enumerated() {
             let slot = Int32(index + 1)
             let result: Int32
@@ -160,11 +236,49 @@ final class SQLiteDatabase {
                 result = sqlite3_bind_null(statement, slot)
             }
             guard result == SQLITE_OK else {
-                sqlite3_finalize(statement)
+                let lease = StatementLease(sql: sql, statement: statement, isCached: isCached)
+                release(lease)
                 throw SQLiteError.bindFailed(lastMessage)
             }
         }
-        return statement
+
+        if isCached { statementsInUse.insert(sql) }
+        return StatementLease(sql: sql, statement: statement, isCached: isCached)
+    }
+
+    /// Returns a statement to the pool. Resetting here (rather than lazily on
+    /// the next `prepare`) releases any read locks the statement still holds
+    /// and stops an aborted iteration from resuming mid-cursor.
+    private func release(_ lease: StatementLease) {
+        if lease.isCached {
+            sqlite3_reset(lease.statement)
+            sqlite3_clear_bindings(lease.statement)
+            statementsInUse.remove(lease.sql)
+        } else {
+            sqlite3_finalize(lease.statement)
+        }
+    }
+
+    private func touch(_ sql: String) {
+        if let index = statementOrder.firstIndex(of: sql) {
+            statementOrder.remove(at: index)
+        }
+        statementOrder.append(sql)
+    }
+
+    private func evictIfNeeded() {
+        while statementCache.count > Self.statementCacheCapacity {
+            // Never evict a statement that is mid-iteration.
+            guard let victim = statementOrder.first(where: { !statementsInUse.contains($0) }) else {
+                return
+            }
+            if let statement = statementCache.removeValue(forKey: victim) {
+                sqlite3_finalize(statement)
+            }
+            if let index = statementOrder.firstIndex(of: victim) {
+                statementOrder.remove(at: index)
+            }
+        }
     }
 }
 
