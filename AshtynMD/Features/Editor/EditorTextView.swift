@@ -59,6 +59,12 @@ struct EditorTextView: NSViewRepresentable {
             coordinator.toggleWrap(in: scrollView)
         }
 
+        textView.markdownModeToggleHandler = {
+            [weak coordinator = context.coordinator, weak scrollView] mode in
+            guard let coordinator, let scrollView else { return }
+            coordinator.toggleMarkdownMode(mode, in: scrollView)
+        }
+
         textView.imageInsertionHandler = imageInsertion
         context.coordinator.configureAI(for: textView)
         context.coordinator.registerSourceEditHandler()
@@ -237,6 +243,43 @@ struct EditorTextView: NSViewRepresentable {
 
         /// User override for line wrapping, on top of the language profile.
         private var wrapOverride: Bool?
+
+        /// Focus, typewriter, and marker visibility all live on the profile, so
+        /// they persist per language through the existing profile store.
+        func toggleMarkdownMode(_ mode: MarkdownEditorMode, in scrollView: NSScrollView) {
+            guard let textView, var profile = appliedProfile, appliedLanguage == .markdown else {
+                return
+            }
+            switch mode {
+            case .focus:
+                profile.focusModeEnabled.toggle()
+                markdownStyler?.focusModeEnabled = profile.focusModeEnabled
+            case .typewriter:
+                profile.typewriterModeEnabled.toggle()
+                installTypewriterScroller(for: textView, scrollView: scrollView)
+                typewriterScroller?.isEnabled = profile.typewriterModeEnabled
+            case .markerVisibility:
+                switch profile.markerVisibility {
+                case .caretLine: profile.markerVisibility = .always
+                case .always: profile.markerVisibility = .hidden
+                case .hidden: profile.markerVisibility = .caretLine
+                }
+                markdownStyler?.profile = profile
+            }
+            appliedProfile = profile
+            textView.profile = profile
+            EditorProfilesStore.shared.update(profile, for: .markdown)
+        }
+
+        private func installTypewriterScroller(for textView: PlainTextView, scrollView: NSScrollView) {
+            guard typewriterScroller == nil else { return }
+            typewriterScroller = TypewriterScroller(
+                textView: textView,
+                scrollView: scrollView
+            ) { [weak self] isScrolling in
+                self?.isPerformingTypewriterScroll = isScrolling
+            }
+        }
 
         func toggleWrap(in scrollView: NSScrollView) {
             guard let textView, let profile = appliedProfile else { return }
@@ -464,6 +507,9 @@ struct EditorTextView: NSViewRepresentable {
                 styler.palette = palette
                 styler.applyBaseAttributes()
                 styler.restyleAll()
+                styler.focusModeEnabled = profile.focusModeEnabled
+                installTypewriterScroller(for: textView, scrollView: scrollView)
+                typewriterScroller?.isEnabled = profile.typewriterModeEnabled
                 // Line numbers are noise in a prose editor.
                 scrollView.rulersVisible = false
             } else {

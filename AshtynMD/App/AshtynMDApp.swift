@@ -84,6 +84,70 @@ struct AshtynMDApp: App {
                 Button("AI Completion") { sendToEditor(#selector(PlainTextView.requestAICompletion(_:))) }
                     .keyboardShortcut(" ", modifiers: [.control, .option])
             }
+            CommandMenu("Format") {
+                Group {
+                    Button("Bold") { sendToEditor(#selector(PlainTextView.toggleMarkdownBold(_:))) }
+                        .keyboardShortcut("b", modifiers: .command)
+                    Button("Italic") { sendToEditor(#selector(PlainTextView.toggleMarkdownItalic(_:))) }
+                        .keyboardShortcut("i", modifiers: .command)
+                    // ⌘E is taken by "Use Selection for Find" from the find bar.
+                    Button("Code") { sendToEditor(#selector(PlainTextView.toggleMarkdownInlineCode(_:))) }
+                        .keyboardShortcut("e", modifiers: [.command, .shift])
+                    Button("Strikethrough") {
+                        sendToEditor(#selector(PlainTextView.toggleMarkdownStrikethrough(_:)))
+                    }
+                    .keyboardShortcut("x", modifiers: [.command, .shift])
+                    Button("Link…") { sendToEditor(#selector(PlainTextView.insertMarkdownLink(_:))) }
+                        .keyboardShortcut("k", modifiers: .command)
+                }
+                .disabled(!isMarkdownActive)
+
+                Divider()
+
+                // Reserves ⌘1–⌘6 app-wide; tab switching must not claim them.
+                Group {
+                    Button("Heading 1") { sendToEditor(#selector(PlainTextView.setMarkdownHeading1(_:))) }
+                        .keyboardShortcut("1", modifiers: .command)
+                    Button("Heading 2") { sendToEditor(#selector(PlainTextView.setMarkdownHeading2(_:))) }
+                        .keyboardShortcut("2", modifiers: .command)
+                    Button("Heading 3") { sendToEditor(#selector(PlainTextView.setMarkdownHeading3(_:))) }
+                        .keyboardShortcut("3", modifiers: .command)
+                    Button("Heading 4") { sendToEditor(#selector(PlainTextView.setMarkdownHeading4(_:))) }
+                        .keyboardShortcut("4", modifiers: .command)
+                    Button("Heading 5") { sendToEditor(#selector(PlainTextView.setMarkdownHeading5(_:))) }
+                        .keyboardShortcut("5", modifiers: .command)
+                    Button("Heading 6") { sendToEditor(#selector(PlainTextView.setMarkdownHeading6(_:))) }
+                        .keyboardShortcut("6", modifiers: .command)
+                    Button("Body Text") {
+                        sendToEditor(#selector(PlainTextView.clearMarkdownBlockStyle(_:)))
+                    }
+                    .keyboardShortcut("0", modifiers: .command)
+                }
+                .disabled(!isMarkdownActive)
+
+                Divider()
+
+                Group {
+                    Button("Quote") { sendToEditor(#selector(PlainTextView.toggleMarkdownQuote(_:))) }
+                        .keyboardShortcut("u", modifiers: [.command, .shift])
+                    Button("Bulleted List") {
+                        sendToEditor(#selector(PlainTextView.toggleMarkdownBulletList(_:)))
+                    }
+                    .keyboardShortcut("8", modifiers: [.command, .shift])
+                    Button("Numbered List") {
+                        sendToEditor(#selector(PlainTextView.toggleMarkdownNumberedList(_:)))
+                    }
+                    .keyboardShortcut("7", modifiers: [.command, .shift])
+                    // ⇧⌘C is the system color panel, so Todo takes ⇧⌘L.
+                    Button("Todo") { sendToEditor(#selector(PlainTextView.toggleMarkdownTask(_:))) }
+                        .keyboardShortcut("l", modifiers: [.command, .shift])
+                    Button("Divider") {
+                        sendToEditor(#selector(PlainTextView.insertMarkdownDivider(_:)))
+                    }
+                    .keyboardShortcut("-", modifiers: [.command, .shift])
+                }
+                .disabled(!isMarkdownActive)
+            }
             CommandGroup(after: .toolbar) {
                 Button("Toggle Line Wrap") { sendToEditor(#selector(PlainTextView.toggleLineWrap(_:))) }
                     .keyboardShortcut("l", modifiers: [.command, .option])
@@ -113,6 +177,24 @@ struct AshtynMDApp: App {
                 }
                 .keyboardShortcut("3", modifiers: [.command, .option])
                 .disabled(appModel.activeSession?.languageID != .markdown)
+
+                Divider()
+
+                // Extends the ⌥⌘1/2/3 view cluster. ⌃⌘F, ⌥⌘F, and ⌥⌘M are all
+                // system-bound, which is why focus mode is not on an "F".
+                Button("Focus Mode") { sendToEditor(#selector(PlainTextView.toggleFocusMode(_:))) }
+                    .keyboardShortcut("4", modifiers: [.command, .option])
+                    .disabled(!isMarkdownActive)
+                Button("Typewriter Mode") {
+                    sendToEditor(#selector(PlainTextView.toggleTypewriterMode(_:)))
+                }
+                .keyboardShortcut("5", modifiers: [.command, .option])
+                .disabled(!isMarkdownActive)
+                Button("Show Markdown Markers") {
+                    sendToEditor(#selector(PlainTextView.cycleMarkerVisibility(_:)))
+                }
+                .keyboardShortcut("0", modifiers: [.command, .option])
+                .disabled(!isMarkdownActive)
 
                 Menu("Language") {
                     Picker("Language", selection: languageOverrideBinding) {
@@ -148,6 +230,13 @@ struct AshtynMDApp: App {
 
     private var newCodeFileLanguages: [LanguageID] {
         [.plainText, .swift, .python, .javascript, .typescript, .json, .yaml, .html, .css, .shell]
+    }
+
+    /// Whether the focused document is Markdown. Formatting commands are
+    /// disabled otherwise; the selectors guard again, because sendToEditor
+    /// walks the responder chain and can reach a code editor in another window.
+    private var isMarkdownActive: Bool {
+        appModel.activeSession?.languageID == .markdown
     }
 
     /// Routes an editor command through the responder chain to the focused

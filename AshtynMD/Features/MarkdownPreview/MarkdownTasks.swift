@@ -7,6 +7,11 @@ enum MarkdownTasks {
         /// UTF-16 range of the bracket content: the single character between
         /// "[" and "]".
         let stateRange: NSRange
+        /// `[x]` including the brackets. Click hit-testing in the editor needs
+        /// a target bigger than one character.
+        let bracketRange: NSRange
+        /// The whole line holding the marker.
+        let lineRange: NSRange
         let isChecked: Bool
     }
 
@@ -26,7 +31,14 @@ enum MarkdownTasks {
             guard let match else { return }
             let stateRange = match.range(at: 1)
             let state = ns.substring(with: stateRange).lowercased()
-            results.append(TaskMarker(stateRange: stateRange, isChecked: state == "x"))
+            results.append(
+                TaskMarker(
+                    stateRange: stateRange,
+                    bracketRange: NSRange(location: stateRange.location - 1, length: 3),
+                    lineRange: ns.lineRange(for: stateRange),
+                    isChecked: state == "x"
+                )
+            )
         }
         return results
     }

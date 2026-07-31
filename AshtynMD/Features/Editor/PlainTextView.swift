@@ -39,6 +39,9 @@ final class PlainTextView: NSTextView {
     var markdownStyler: MarkdownStyler?
     /// Palette in effect, for the current-line and tag-pill drawing.
     var palette: EditorPalette?
+    /// Invoked by the focus / typewriter / marker-visibility menu commands;
+    /// owned by the coordinator, which holds the profile and scroll view.
+    var markdownModeToggleHandler: ((MarkdownEditorMode) -> Void)?
 
     @objc func requestAICompletion(_ sender: Any?) {
         aiCompletionRequestHandler?()
@@ -223,6 +226,64 @@ final class PlainTextView: NSTextView {
             ?? NSColor.selectedTextBackgroundColor.withAlphaComponent(0.14)
         highlight.setFill()
         highlightRect.fill()
+    }
+
+    // MARK: - Checkbox clicking
+
+    override func mouseDown(with event: NSEvent) {
+        if event.clickCount == 1,
+           event.modifierFlags.intersection(.deviceIndependentFlagsMask).isEmpty,
+           isMarkdownDocument,
+           let index = characterIndexAtPreciseHit(for: event),
+           toggleTask(containingCharacterAt: index) {
+            return
+        }
+        super.mouseDown(with: event)
+    }
+
+    /// Character index under the pointer, but only when the pointer is actually
+    /// inside that glyph's rect.
+    ///
+    /// `characterIndexForInsertion(at:)` clamps a click past end-of-line to the
+    /// nearest character, which would toggle a checkbox from a click far out in
+    /// the right margin.
+    private func characterIndexAtPreciseHit(for event: NSEvent) -> Int? {
+        guard let layoutManager, let textContainer else { return nil }
+        var point = convert(event.locationInWindow, from: nil)
+        point.x -= textContainerOrigin.x
+        point.y -= textContainerOrigin.y
+
+        var fraction: CGFloat = 0
+        let glyphIndex = layoutManager.glyphIndex(
+            for: point, in: textContainer, fractionOfDistanceThroughGlyph: &fraction
+        )
+        let bounds = layoutManager.boundingRect(
+            forGlyphRange: NSRange(location: glyphIndex, length: 1), in: textContainer
+        )
+        guard bounds.contains(point) else { return nil }
+        return layoutManager.characterIndexForGlyph(at: glyphIndex)
+    }
+
+    /// Flips the checkbox whose brackets contain `index`.
+    ///
+    /// Routes through applyExternalEdit, which is already wrapped in
+    /// shouldChangeText/didChangeText, so the toggle is a single undoable edit
+    /// that reaches the session — the same path the preview's checkboxes use.
+    @discardableResult
+    private func toggleTask(containingCharacterAt index: Int) -> Bool {
+        let markers = MarkdownTasks.markers(in: string)
+        guard let marker = markers.first(where: {
+            NSLocationInRange(index, $0.bracketRange)
+        }) else { return false }
+
+        let saved = selectedRange()
+        let replacement = marker.isChecked ? " " : "x"
+        guard applyExternalEdit(range: marker.stateRange, replacement: replacement) else {
+            return false
+        }
+        // A click on a checkbox should not also move the caret.
+        setSelectedRange(saved)
+        return true
     }
 
     // MARK: - Bracket and quote pairing
