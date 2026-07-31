@@ -12,24 +12,38 @@ struct AshtynMDApp: App {
         }
         .commands {
             CommandGroup(replacing: .newItem) {
-                Button("New Markdown File") {
-                    appModel.newFile(language: .markdown)
+                // ⌘N always captures to the Inbox, whatever is selected.
+                Button("New Note") {
+                    appModel.actions.newNoteInInbox()
                 }
                 .keyboardShortcut("n", modifiers: .command)
+                .disabled(appModel.libraryRoot == nil)
+
+                Button("New Note in Selected Location") {
+                    appModel.actions.newNoteInSelectedLocation(
+                        selection: appModel.sidebarSelection
+                    )
+                }
+                .keyboardShortcut("n", modifiers: [.command, .option])
                 .disabled(appModel.libraryRoot == nil)
 
                 Menu("New Code File") {
                     ForEach(newCodeFileLanguages, id: \.self) { language in
                         let definition = LanguageDefinition.definition(for: language)
                         Button("\(definition.displayName) (.\(definition.preferredExtension))") {
-                            appModel.newFile(language: language)
+                            appModel.actions.newNoteInSelectedLocation(
+                                language: language,
+                                selection: appModel.sidebarSelection
+                            )
                         }
                     }
                 }
                 .disabled(appModel.libraryRoot == nil)
 
                 Button("New Folder") {
-                    appModel.newFolder(named: "New Folder")
+                    appModel.actions.newFolder(
+                        named: "New Folder", selection: appModel.sidebarSelection
+                    )
                 }
                 .keyboardShortcut("n", modifiers: [.command, .shift])
                 .disabled(appModel.libraryRoot == nil)
@@ -41,12 +55,21 @@ struct AshtynMDApp: App {
                 .keyboardShortcut("s", modifiers: .command)
 
                 Button("Close Tab") {
-                    if let active = appModel.activeTabID {
-                        appModel.closeTab(active)
+                    if let active = appModel.tabs.activeTabID {
+                        appModel.tabs.close(active)
                     }
                 }
                 .keyboardShortcut("w", modifiers: .command)
-                .disabled(appModel.activeTabID == nil)
+                .disabled(appModel.tabs.activeTabID == nil)
+
+                Divider()
+
+                // ⌘M is system Minimize, so filing takes ⌃⌘M.
+                Button("Move to…") {
+                    LibraryCommandRequests.shared.send(.moveToFolder)
+                }
+                .keyboardShortcut("m", modifiers: [.command, .control])
+                .disabled(appModel.libraryRoot == nil)
             }
             CommandGroup(after: .textEditing) {
                 Button("Search Library") {

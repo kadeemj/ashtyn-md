@@ -7,11 +7,13 @@ final class LibraryWorkflowUITests: UITestCase {
         let choose = element(AccessibilityID.onboardingChooseFolder)
         XCTAssertTrue(choose.waitForExistence(timeout: 10))
         choose.click()
-        XCTAssertTrue(file(named: "Fixture Note.md").waitForExistence(timeout: 10))
+        chooseSidebarItem("Notes")
+        XCTAssertTrue(file(named: "Fixture Note").waitForExistence(timeout: 10))
 
         app.terminate()
         launch(reset: false)
-        XCTAssertTrue(file(named: "Fixture Note.md").waitForExistence(timeout: 10))
+        chooseSidebarItem("Notes")
+        XCTAssertTrue(file(named: "Fixture Note").waitForExistence(timeout: 10))
         XCTAssertFalse(element(AccessibilityID.onboardingChooseFolder).exists)
     }
 
@@ -24,13 +26,39 @@ final class LibraryWorkflowUITests: UITestCase {
         app.typeKey("n", modifierFlags: [.command, .shift])
         XCTAssertTrue(app.staticTexts["New Folder"].waitForExistence(timeout: 10))
 
-        app.typeKey("n", modifierFlags: .command)
-        XCTAssertTrue(file(named: "Untitled.md").waitForExistence(timeout: 10))
+        // ⌥⌘N creates where the sidebar points; plain ⌘N always captures to the
+        // Inbox regardless of selection.
+        app.typeKey("n", modifierFlags: [.command, .option])
+        // A brand-new note has no first line yet, so it lists as "Untitled".
+        XCTAssertTrue(file(named: "Untitled").waitForExistence(timeout: 10))
+
         chooseFileMenuItem("New Code File")
         let swiftItem = app.menuItems["Swift (.swift)"]
         XCTAssertTrue(swiftItem.waitForExistence(timeout: 5))
         swiftItem.click()
+        // Code files are never parsed for a title, so the filename shows.
         XCTAssertTrue(file(named: "Untitled.swift").waitForExistence(timeout: 10))
+    }
+
+    func testNewNoteLandsInTheInbox() {
+        launch()
+        app.typeKey("n", modifierFlags: .command)
+        // ⌘N captures to the Inbox, which is also where the app opened.
+        chooseSidebarItem("Inbox")
+        XCTAssertTrue(file(named: "Untitled").waitForExistence(timeout: 10))
+        XCTAssertTrue(file(withName: "Untitled.md").exists)
+    }
+
+    func testLaunchSelectsInboxAndRestoresTabs() {
+        launch()
+        openFixtureNote()
+        XCTAssertTrue(tab(named: "Fixture Note.md").exists)
+
+        app.terminate()
+        launch(reset: false)
+        // The sidebar always lands on the Inbox so the app opens ready to
+        // capture, while previously open tabs still come back.
+        XCTAssertTrue(tab(named: "Fixture Note.md").waitForExistence(timeout: 10))
     }
 
     func testOpenSeveralTabsAndRestoreState() {
@@ -51,7 +79,8 @@ final class LibraryWorkflowUITests: UITestCase {
 
     func testSearchFavoriteAndReopenRecentNote() {
         launch()
-        let note = file(named: "Fixture Note.md")
+        chooseSidebarItem("Notes")
+        let note = file(named: "Fixture Note")
         XCTAssertTrue(note.waitForExistence(timeout: 10))
         note.rightClick()
         let favorite = app.menuItems["Add to Favorites"]
@@ -59,16 +88,29 @@ final class LibraryWorkflowUITests: UITestCase {
         favorite.click()
 
         chooseSidebarItem("Favorites")
-        XCTAssertTrue(file(named: "Fixture Note.md").waitForExistence(timeout: 10))
+        XCTAssertTrue(file(named: "Fixture Note").waitForExistence(timeout: 10))
+
         app.typeKey("f", modifierFlags: [.command, .shift])
         let search = element(AccessibilityID.searchField)
         XCTAssertTrue(search.waitForExistence(timeout: 10))
         search.typeText("alpha")
-        let result = file(named: "Fixture Note.md")
+        // Search results now live in their own list with its own identifier.
+        let result = searchResult(named: "Fixture Note")
         XCTAssertTrue(result.waitForExistence(timeout: 10))
         result.click()
 
         chooseSidebarItem("Recents")
-        XCTAssertTrue(file(named: "Fixture Note.md").waitForExistence(timeout: 10))
+        XCTAssertTrue(file(named: "Fixture Note").waitForExistence(timeout: 10))
+    }
+
+    func testTagAppearsInSidebarAndFiltersNotes() {
+        launch()
+        // Tagged Note.md carries #work/alpha, so both the parent and the child
+        // show up, and selecting the parent still lists the note.
+        chooseSidebarItem("work")
+        XCTAssertTrue(file(named: "Weekly Review").waitForExistence(timeout: 10))
+
+        chooseSidebarItem("alpha")
+        XCTAssertTrue(file(named: "Weekly Review").waitForExistence(timeout: 10))
     }
 }

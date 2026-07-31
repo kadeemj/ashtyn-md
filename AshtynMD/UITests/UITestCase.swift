@@ -26,10 +26,32 @@ class UITestCase: XCTestCase {
         app.descendants(matching: .any)[identifier]
     }
 
-    func file(named name: String) -> XCUIElement {
-        element(AccessibilityID.fileList)
+    /// Finds a note row by the text the user sees.
+    ///
+    /// Since Phase 7 that is the note's *title* (its first line), not its
+    /// filename — the row's accessibility label follows the display. The
+    /// filename is still available as the row's value, hence `file(withName:)`.
+    func file(named title: String) -> XCUIElement {
+        element(AccessibilityID.noteList)
             .descendants(matching: .any)
-            .matching(NSPredicate(format: "label == %@", name))
+            .matching(NSPredicate(format: "label == %@", title))
+            .firstMatch
+    }
+
+    /// Finds a note row by its filename, for assertions that care about what is
+    /// on disk rather than what is displayed.
+    func file(withName name: String) -> XCUIElement {
+        element(AccessibilityID.noteList)
+            .descendants(matching: .any)
+            .matching(NSPredicate(format: "value == %@", name))
+            .firstMatch
+    }
+
+    /// Search results live in their own list now, so they need their own lookup.
+    func searchResult(named title: String) -> XCUIElement {
+        element(AccessibilityID.searchResults)
+            .descendants(matching: .any)
+            .matching(NSPredicate(format: "label == %@", title))
             .firstMatch
     }
 
@@ -42,7 +64,10 @@ class UITestCase: XCTestCase {
 
     @discardableResult
     func openFixtureNote() -> XCUIElement {
-        let note = file(named: "Fixture Note.md")
+        // The app now opens on the Inbox; the fixture note sits at the library
+        // root, so select Notes to see it.
+        chooseSidebarItem("Notes")
+        let note = file(named: "Fixture Note")
         XCTAssertTrue(note.waitForExistence(timeout: 10))
         note.click()
         let editor = element(AccessibilityID.editor)
@@ -50,10 +75,12 @@ class UITestCase: XCTestCase {
         return editor
     }
 
+    /// Sidebar rows carry a count in their accessibility value now, so they are
+    /// matched on label rather than value.
     func chooseSidebarItem(_ title: String) {
         let item = element(AccessibilityID.sidebar)
             .descendants(matching: .any)
-            .matching(NSPredicate(format: "value == %@", title))
+            .matching(NSPredicate(format: "label == %@", title))
             .firstMatch
         XCTAssertTrue(item.waitForExistence(timeout: 10))
         item.click()
@@ -90,6 +117,7 @@ class UITestCase: XCTestCase {
 final class UITestBootstrapTests: UITestCase {
     func testFixtureLibraryLaunchesWithoutAnOpenPanel() {
         launch()
-        XCTAssertTrue(file(named: "Fixture Note.md").waitForExistence(timeout: 10))
+        chooseSidebarItem("Notes")
+        XCTAssertTrue(file(named: "Fixture Note").waitForExistence(timeout: 10))
     }
 }

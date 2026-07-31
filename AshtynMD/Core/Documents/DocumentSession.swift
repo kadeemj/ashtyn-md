@@ -68,6 +68,10 @@ final class DocumentSession: Identifiable {
     /// Lets the library debounce persistence while keeping editor state
     /// changes independent from SwiftUI observation.
     @ObservationIgnored var viewStateDidChange: (@MainActor () -> Void)?
+    /// Fired after the text changes. The library uses it to keep a note's
+    /// filename in step with its first line; nil for standalone documents
+    /// opened from Finder, where renaming would be wrong.
+    @ObservationIgnored var textDidChange: (@MainActor () -> Void)?
     /// Routes programmatic source edits (e.g. a preview checkbox toggle)
     /// through the live editor so they join the native undo stack. Registered
     /// by the editor coordinator; nil when no editor is mounted.
@@ -178,6 +182,7 @@ final class DocumentSession: Identifiable {
         lastSaveError = nil
         scheduleAutosave()
         startSnapshotLoopIfNeeded()
+        textDidChange?()
     }
 
     private func scheduleAutosave() {

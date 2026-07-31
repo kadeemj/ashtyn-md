@@ -48,6 +48,32 @@ struct UITestLaunchConfiguration {
             try Data("let fixtureValue = 42\n".utf8)
                 .write(to: library.appendingPathComponent("Code/sample.swift"))
 
+            // Added rather than folded into Fixture Note.md, which existing
+            // assertions depend on.
+            try Data(
+                """
+                Weekly Review
+
+                Wrapping up the week #work/alpha and #reading
+
+                - [ ] draft the summary
+                - [x] collect metrics
+
+                See also [[Fixture Note]] for context.
+                """.utf8
+            ).write(to: library.appendingPathComponent("Tagged Note.md"))
+
+            try FileManager.default.createDirectory(
+                at: library.appendingPathComponent(InboxFolder.name, isDirectory: true),
+                withIntermediateDirectories: true
+            )
+            try Data("Captured Note\n\nstraight into the inbox\n".utf8)
+                .write(
+                    to: library
+                        .appendingPathComponent(InboxFolder.name)
+                        .appendingPathComponent("Captured Note.md")
+                )
+
             let largeFile = library.appendingPathComponent("Large.md")
             _ = FileManager.default.createFile(atPath: largeFile.path, contents: nil)
             let handle = try FileHandle(forWritingTo: largeFile)
