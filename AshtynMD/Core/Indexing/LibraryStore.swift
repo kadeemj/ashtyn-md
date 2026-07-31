@@ -285,6 +285,16 @@ actor LibraryStore {
         Int(try database.query("SELECT COUNT(*) FROM files_fts") { $0.int(0) }.first ?? 0)
     }
 
+    /// Reproduces what the v2 migration leaves behind — correct size and mtime,
+    /// empty derived columns — so the indexer's revisit path can be tested.
+    func markReindexPendingForTesting(relativePath: String) throws {
+        try database.run("""
+            UPDATE files SET reindex_pending = 1, title = '', title_key = '',
+                             excerpt = '', word_count = 0, todo_total = 0, todo_open = 0
+            WHERE relative_path = ?
+            """, [.text(relativePath)])
+    }
+
 
     // MARK: - Upserts from the indexer
 

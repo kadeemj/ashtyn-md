@@ -1,5 +1,12 @@
 import Foundation
 
+/// How far a scan has got, for the note list's progress header.
+struct IndexingProgress: Sendable, Equatable {
+    var scanned: Int
+    /// nil while the total is still unknown — enumeration is lazy on purpose.
+    var total: Int?
+}
+
 /// Enumerates a library root, keeps the LibraryStore in sync with disk, and
 /// reacts to FSEvents. Designed for libraries up to ~10,000 supported files:
 /// enumeration is lazy, work happens in batches off the main actor.
@@ -17,18 +24,23 @@ actor LibraryIndexer {
 
     /// Called after any batch of index changes lands; the UI refreshes from it.
     private let onChange: @Sendable () -> Void
+    /// Fired once per scan batch. The v2 migration forces a full reindex, and
+    /// this is what lets the note list say so instead of looking broken.
+    private let onProgress: (@Sendable (IndexingProgress) -> Void)?
 
     init(
         root: URL,
         store: LibraryStore,
         showHiddenFiles: Bool = false,
-        onChange: @escaping @Sendable () -> Void
+        onChange: @escaping @Sendable () -> Void,
+        onProgress: (@Sendable (IndexingProgress) -> Void)? = nil
     ) {
         self.root = root
         self.rootPath = AppSupportPaths.canonicalPath(of: root)
         self.store = store
         self.showHiddenFiles = showHiddenFiles
         self.onChange = onChange
+        self.onProgress = onProgress
     }
 
     func setShowHiddenFiles(_ show: Bool) async throws {
@@ -90,11 +102,16 @@ actor LibraryIndexer {
             if batch.count >= Self.scanBatchSize {
                 try await indexBatch(batch)
                 batch.removeAll(keepingCapacity: true)
+                onProgress?(IndexingProgress(scanned: seenPaths.count, total: nil))
                 await Task.yield()
             }
         }
         try await indexBatch(batch)
         try await store.removeFilesNotIn(seenPaths)
+        // Once per scan, never per file: a note losing its last tag should not
+        // make every other note pay for a prune.
+        _ = try await store.pruneOrphanTags()
+        onProgress?(IndexingProgress(scanned: seenPaths.count, total: seenPaths.count))
         onChange()
     }
 
@@ -116,7 +133,9 @@ actor LibraryIndexer {
 
         if let existing = try await store.record(forRelativePath: relative) {
             let sameStamp = abs(existing.modifiedAt.timeIntervalSince1970 - disk.modificationDate.timeIntervalSince1970) < 0.001
-            if sameStamp && existing.size == size { return }
+            // reindexPending overrides the stamp check: after the v2 migration
+            // size and mtime match but the derived columns are all empty.
+            if sameStamp && existing.size == size && !existing.reindexPending { return }
         } else if let moved = try await store.record(forResourceID: disk.resourceID) {
             // Same inode, new path: it moved. Keep identity, then fall through
             // to refresh metadata (content may also have changed).
@@ -129,15 +148,41 @@ actor LibraryIndexer {
         let language = LanguageDetector.detect(
             fileName: url.lastPathComponent, contents: content
         )
-        try await store.upsertFile(
+
+        var update = FileIndexUpdate(
             relativePath: relative,
             size: size,
             modifiedAt: disk.modificationDate,
+            // Free: attributesOfItem was already read above.
+            createdAt: attributes[.creationDate] as? Date,
             contentHash: hash,
             languageID: language,
             resourceID: disk.resourceID,
             content: content
         )
+        // Only Markdown is parsed. `#` is the comment character in shell,
+        // Python, YAML, and Ruby, so every shebang and `# TODO` in the library
+        // would otherwise become a sidebar tag — and a Swift file's first line
+        // makes a catastrophic auto-filename.
+        if language == .markdown, let content {
+            update.parsed = MarkdownMetadata.parse(content)
+        }
+        try await store.upsertFile(update)
+    }
+
+    /// Repoints a row after the app itself renames a file.
+    ///
+    /// Called by the title-rename coordinator *before* FSEvents reports the
+    /// move. The later event batch then finds a row whose mtime and size match
+    /// and returns early, while the old path matches nothing — so this is fully
+    /// idempotent with no suppression set and no timers to leak.
+    func applyRename(from oldRelativePath: String, to newRelativePath: String) async throws {
+        let url = root.appendingPathComponent(newRelativePath)
+        guard let disk = SaveCoordinator.diskState(of: url) else { return }
+        try await store.updatePath(
+            ofFileWithResourceID: disk.resourceID, to: newRelativePath
+        )
+        _ = oldRelativePath
     }
 
     /// Reads content for FTS when the file is small enough and not binary.
@@ -152,9 +197,32 @@ actor LibraryIndexer {
 
     // MARK: - FSEvents
 
+    /// Test seam: FSEvents cannot be driven deterministically from a unit test.
+    func handleEventPathsForTesting(_ paths: [String]) async {
+        await handleEventPaths(paths)
+    }
+
     private func handleEventPaths(_ paths: [String]) async {
         var changed = false
-        for path in paths {
+
+        // Paths that still exist are processed before paths that are gone.
+        //
+        // FSEvents reports a batch in arbitrary order. Handling the vanished
+        // old path of a rename first used to delete the row outright, so the
+        // subsequent index of the new path found no resource_id match and
+        // inserted a fresh row — losing the id, the favorite flag, recents,
+        // and the saved view state. Existing-first means the move is detected
+        // by inode and identity is preserved, which also fixes plain Finder
+        // renames. This becomes constant, not rare, once filenames follow
+        // note titles.
+        let ordered = paths.sorted { left, right in
+            let leftExists = FileManager.default.fileExists(atPath: left)
+            let rightExists = FileManager.default.fileExists(atPath: right)
+            if leftExists != rightExists { return leftExists }
+            return false
+        }
+
+        for path in ordered {
             let url = URL(fileURLWithPath: path)
             guard let relative = relativePath(of: url) else { continue }
             if relativePathIsExcluded(relative) { continue }
@@ -164,7 +232,9 @@ actor LibraryIndexer {
             do {
                 if !exists {
                     // Removed, or renamed away: prune this path (and subtree —
-                    // we can't know whether it was a folder).
+                    // we can't know whether it was a folder). A rename's new
+                    // path was already handled above, which repointed the row,
+                    // so this now matches nothing rather than deleting it.
                     try await store.removeFile(relativePath: relative)
                     try await store.removeSubtree(folderPath: relative)
                     changed = true
@@ -179,7 +249,11 @@ actor LibraryIndexer {
                 // Index errors are recoverable; the next full scan reconciles.
             }
         }
-        if changed { onChange() }
+        if changed {
+            // Once per batch, not per path.
+            try? await store.pruneOrphanTags()
+            onChange()
+        }
     }
 
     /// Re-syncs one directory (not recursive: FSEvents reports child
