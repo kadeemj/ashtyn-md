@@ -329,7 +329,7 @@ struct EditorTextView: NSViewRepresentable {
                 let clipped = NSIntersectionRange(
                     span.range, NSRange(location: 0, length: fullLength)
                 )
-                guard clipped.length > 0, let color = palette[span.token] else { continue }
+                guard clipped.length > 0, let color = palette.tokens[span.token] else { continue }
                 layoutManager.addTemporaryAttribute(
                     .foregroundColor, value: color.nsColor, forCharacterRange: clipped
                 )
@@ -337,11 +337,11 @@ struct EditorTextView: NSViewRepresentable {
         }
 
         /// Theme palette with per-language profile overrides on top.
-        private func effectivePalette(isDark: Bool) -> [SyntaxToken: CodableColor] {
+        func effectivePalette(isDark: Bool) -> EditorPalette {
             let theme = appliedTheme ?? .system
             var palette = theme.palette(forDarkAppearance: isDark)
             if let overrides = appliedProfile?.tokenColors, !overrides.isEmpty {
-                palette.merge(overrides) { _, override in override }
+                palette.tokens.merge(overrides) { _, override in override }
             }
             return palette
         }

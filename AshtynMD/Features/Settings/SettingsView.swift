@@ -112,7 +112,7 @@ struct EditorSettingsView: View {
                 selection: Binding(
                     get: {
                         let color = profile.wrappedValue.tokenColors[token]
-                            ?? themePalette[token]
+                            ?? themePalette.tokens[token]
                             ?? CodableColor(nsColor: .textColor)
                         return Color(nsColor: color.nsColor)
                     },
