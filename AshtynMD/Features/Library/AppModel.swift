@@ -9,6 +9,11 @@ import Observation
 @MainActor
 @Observable
 final class AppModel {
+    /// The DEBUG UI-test fallback window is created by the app delegate,
+    /// which may outlive SwiftUI's state wrapper during scene bootstrap.
+    /// Keep the composition root available for that handoff.
+    static var applicationInstance: AppModel?
+
     let session = LibrarySession()
     let tabs = TabsModel()
     let noteList = NoteListModel()
@@ -61,6 +66,7 @@ final class AppModel {
     }
 
     init() {
+        Self.applicationInstance = self
         actions = NoteActionsModel(
             dependencies: NoteActionsModel.Dependencies(
                 session: { [unowned self] in self.session },

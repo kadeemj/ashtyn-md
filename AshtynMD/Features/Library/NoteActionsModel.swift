@@ -76,6 +76,10 @@ final class NoteActionsModel {
         try SaveCoordinator.writeAtomically(Data(body.utf8), to: url)
         dependencies.openFile(url)
         dependencies.didChangeFiles()
+        // The file was created outside the indexer's event stream. Reconcile
+        // immediately so the Inbox/list reflects the new note as soon as the
+        // editor opens, including on filesystems where FSEvents coalesces it.
+        dependencies.reindex()
     }
 
     func newFolder(named name: String, selection: SidebarItem?) {

@@ -52,6 +52,7 @@ final class NoteListModel {
 
     /// Fired when the selection or sort changes; the composition root refreshes.
     var onSelectionChange: (() -> Void)?
+    private var refreshGeneration = 0
 
     var selectedRecords: [FileRecord] {
         notes.filter { selectedPaths.contains($0.relativePath) }
@@ -107,6 +108,8 @@ final class NoteListModel {
 
     /// Reloads `notes` for the current selection.
     func refresh(using session: LibrarySession) {
+        refreshGeneration &+= 1
+        let generation = refreshGeneration
         guard let store = session.store else {
             notes = []
             return
@@ -120,36 +123,39 @@ final class NoteListModel {
         }()
 
         Task {
+            let refreshed: [FileRecord]
             do {
                 switch selection {
                 case .inbox:
-                    notes = try await store.files(inFolder: inboxPath, sortedBy: order)
+                    refreshed = try await store.files(inFolder: inboxPath, sortedBy: order)
                 case .notes:
-                    notes = try await store.notes(sortedBy: order)
+                    refreshed = try await store.notes(sortedBy: order)
                 case .untagged:
-                    notes = try await store.untaggedNotes(sortedBy: order)
+                    refreshed = try await store.untaggedNotes(sortedBy: order)
                 case .todo:
-                    notes = try await store.todoNotes(sortedBy: order)
+                    refreshed = try await store.todoNotes(sortedBy: order)
                 case .pinned:
-                    notes = try await store.pinnedNotes(sortedBy: order)
+                    refreshed = try await store.pinnedNotes(sortedBy: order)
                 case .favorites:
-                    notes = try await store.favorites()
+                    refreshed = try await store.favorites()
                 case .recents:
-                    notes = try await store.recents()
+                    refreshed = try await store.recents()
                 case .archive:
-                    notes = try await store.archivedNotes(sortedBy: order)
+                    refreshed = try await store.archivedNotes(sortedBy: order)
                 case .trash:
-                    notes = try await store.trashedNotes(sortedBy: order)
+                    refreshed = try await store.trashedNotes(sortedBy: order)
                 case .tag(let key):
-                    notes = try await store.notes(taggedWith: key, sortedBy: order)
+                    refreshed = try await store.notes(taggedWith: key, sortedBy: order)
                 case .search:
-                    notes = []
+                    refreshed = []
                 case .folder:
-                    notes = try await store.files(inFolder: folderPath ?? "", sortedBy: order)
+                    refreshed = try await store.files(inFolder: folderPath ?? "", sortedBy: order)
                 }
             } catch {
-                notes = []
+                refreshed = []
             }
+            guard generation == self.refreshGeneration else { return }
+            notes = refreshed
             // Drop selections for notes that are no longer listed.
             let paths = Set(notes.map(\.relativePath))
             selectedPaths.formIntersection(paths)

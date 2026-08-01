@@ -47,6 +47,37 @@ final class PlainTextView: NSTextView {
         aiCompletionRequestHandler?()
     }
 
+    /// SwiftUI command shortcuts can be swallowed by the macOS text system
+    /// when an NSTextView is the first responder. Handle the documented AI
+    /// shortcut at the responder boundary as well, so keyboard invocation and
+    /// the menu action share the same request path.
+    override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        let modifiers = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+        if isAICompletionShortcut(event, modifiers: modifiers) {
+            requestAICompletion(nil)
+            return true
+        }
+        return super.performKeyEquivalent(with: event)
+    }
+
+    override func keyDown(with event: NSEvent) {
+        let modifiers = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+        if isAICompletionShortcut(event, modifiers: modifiers) {
+            requestAICompletion(nil)
+            return
+        }
+        super.keyDown(with: event)
+    }
+
+    private func isAICompletionShortcut(
+        _ event: NSEvent,
+        modifiers: NSEvent.ModifierFlags
+    ) -> Bool {
+        event.keyCode == 49
+            && modifiers.contains([.control, .option])
+            && !modifiers.contains(.command)
+    }
+
     /// Undoable programmatic edit used by preview interactions.
     @discardableResult
     func applyExternalEdit(range: NSRange, replacement: String) -> Bool {

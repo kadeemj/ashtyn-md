@@ -89,8 +89,8 @@ struct LibrarySplitView: View {
 
 struct SidebarView: View {
     @Environment(AppModel.self) private var appModel
-    /// Folders are collapsed by default: tags are the primary structure now.
-    @State private var foldersExpanded = false
+    /// Folders start expanded so the library tree is immediately navigable.
+    @State private var foldersExpanded = true
     @State private var tagToRename: TagNode?
     @State private var tagToDelete: TagNode?
     @State private var tagRenameText = ""
@@ -109,13 +109,7 @@ struct SidebarView: View {
             if !appModel.tags.tree.isEmpty {
                 Section("Tags") {
                     // Pinned tags are hoisted to the top of their level.
-                    OutlineGroup(
-                        sortedForDisplay(appModel.tags.tree),
-                        id: \.id,
-                        children: \.nonEmptyChildren
-                    ) { node in
-                        tagRow(node)
-                    }
+                    tagRows(sortedForDisplay(appModel.tags.tree), level: 0)
                 }
                 .accessibilityIdentifier(AccessibilityID.tagTree)
             }
@@ -214,6 +208,17 @@ struct SidebarView: View {
                     .foregroundStyle(.secondary)
             }
         }
+        .padding(.vertical, 1)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(node.displayName)
+        .accessibilityValue(node.count > 0 ? "\(node.count) notes" : "")
+        .contentShape(Rectangle())
+        .onTapGesture {
+            // The recursive presentation is intentionally not an OutlineGroup:
+            // explicit selection keeps nested tag rows reliable in both the
+            // native sidebar and macOS accessibility automation.
+            appModel.sidebarSelection = .tag(node.key)
+        }
         .tag(SidebarItem.tag(node.key))
         // Dropping a note on a tag adds the tag to the note's *text*: tags are
         // content, so there is nowhere else for it to live.
@@ -251,6 +256,23 @@ struct SidebarView: View {
         }
     }
 
+    /// Keep the tag hierarchy visible so parent and child tags can be selected
+    /// directly; indentation preserves the hierarchy without a collapsed
+    /// disclosure state hiding useful filters.
+    private func tagRows(_ nodes: [TagNode], level: Int) -> AnyView {
+        AnyView(
+            ForEach(nodes) { node in
+                VStack(alignment: .leading, spacing: 0) {
+                    tagRow(node)
+                        .padding(.leading, CGFloat(level) * 16)
+                    if !node.children.isEmpty {
+                        tagRows(sortedForDisplay(node.children), level: level + 1)
+                    }
+                }
+            }
+        )
+    }
+
     /// Pinned first, then alphabetical, recursively.
     private func sortedForDisplay(_ nodes: [TagNode]) -> [TagNode] {
         nodes
@@ -266,7 +288,12 @@ struct SidebarView: View {
     }
 
     private func folderRow(_ node: FolderNode, isRoot: Bool) -> some View {
-        Label(node.name, systemImage: isRoot ? "books.vertical" : "folder")
+        HStack(spacing: 6) {
+            Image(systemName: isRoot ? "books.vertical" : "folder")
+                .accessibilityHidden(true)
+            Text(node.name)
+                .accessibilityLabel(node.name)
+        }
             .tag(SidebarItem.folder(node.url))
             .dropDestination(for: URL.self) { urls, _ in
                 for url in urls {
@@ -315,6 +342,15 @@ struct NoteListView: View {
             }
             .listStyle(.inset)
             .accessibilityIdentifier(AccessibilityID.noteList)
+            .onChange(of: noteList.selectedPaths) { oldSelection, newSelection in
+                // List selection is also the document-open gesture. Keep the
+                // set so multi-selection still works for note actions, while
+                // opening the newly selected row in the editor immediately.
+                let path = newSelection.subtracting(oldSelection).first
+                    ?? (newSelection.count == 1 ? newSelection.first : nil)
+                guard let path, let root = appModel.libraryRoot?.url else { return }
+                appModel.openFile(at: root.appendingPathComponent(path))
+            }
         }
         .navigationTitle(noteList.title())
         .toolbar { ToolbarItem { sortMenu } }
@@ -506,6 +542,9 @@ struct NoteRow: View {
         .accessibilityLabel(displayTitle)
         // Value keeps the filename available, since the two now differ.
         .accessibilityValue(record.name)
+        // The identifier makes the filename queryable even when List bridges
+        // the row through an AX element that drops its value field.
+        .accessibilityIdentifier(record.name)
     }
 
     private var dateForDisplay: Date {

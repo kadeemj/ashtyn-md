@@ -42,11 +42,17 @@ final class LibraryWorkflowUITests: UITestCase {
 
     func testNewNoteLandsInTheInbox() {
         launch()
+        // Wait for the attached fixture library before sending the command;
+        // ⌘N is correctly disabled while the library is still bootstrapping.
+        chooseSidebarItem("Inbox")
         app.typeKey("n", modifierFlags: .command)
         // ⌘N captures to the Inbox, which is also where the app opened.
-        chooseSidebarItem("Inbox")
-        XCTAssertTrue(file(named: "Untitled").waitForExistence(timeout: 10))
-        XCTAssertTrue(file(withName: "Untitled.md").exists)
+        let created = file(named: "Untitled")
+        XCTAssertTrue(created.waitForExistence(timeout: 10))
+        XCTAssertTrue(
+            file(withName: "Untitled.md").exists,
+            created.debugDescription
+        )
     }
 
     func testLaunchSelectsInboxAndRestoresTabs() {

@@ -55,12 +55,12 @@ final class EditorWorkflowUITests: UITestCase {
         let editor = openFixtureNote()
         editor.click()
         editor.typeKey(.end, modifierFlags: [.command])
-        editor.typeKey(" ", modifierFlags: [.control, .option])
+        app.typeKey(" ", modifierFlags: [.control, .option])
         waitForGhostText(in: editor)
         editor.typeKey(.tab, modifierFlags: [])
         XCTAssertTrue(text(in: editor).hasSuffix("fixtureSuggestion"))
 
-        editor.typeKey(" ", modifierFlags: [.control, .option])
+        app.typeKey(" ", modifierFlags: [.control, .option])
         waitForGhostText(in: editor)
         editor.typeKey(.escape, modifierFlags: [])
         editor.typeKey(.tab, modifierFlags: [])
@@ -80,6 +80,8 @@ final class EditorWorkflowUITests: UITestCase {
 
     func testLargeFileOpenAnywayKeepsAIDisabled() {
         launch()
+        // The fixture lives at the library root; launch defaults to Inbox.
+        chooseSidebarItem("Notes")
         let large = file(named: "Large.md")
         XCTAssertTrue(large.waitForExistence(timeout: 10))
         large.click()

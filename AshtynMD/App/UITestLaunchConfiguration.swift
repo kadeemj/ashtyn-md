@@ -112,7 +112,7 @@ struct UITestAIProvider: AICompletionProvider {
     func complete(
         _ request: AICompletionRequest
     ) -> AsyncThrowingStream<AICompletionEvent, Error> {
-        AsyncThrowingStream { continuation in
+        return AsyncThrowingStream<AICompletionEvent, Error> { continuation in
             continuation.yield(.textDelta("fixtureSuggestion"))
             continuation.yield(.completed(nil))
             continuation.finish()
