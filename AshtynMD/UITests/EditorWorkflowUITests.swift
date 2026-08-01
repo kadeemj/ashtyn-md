@@ -69,6 +69,25 @@ final class EditorWorkflowUITests: UITestCase {
         XCTAssertEqual(acceptedCount, 1)
     }
 
+    func testWikiLinkAutocompleteSelectsSuggestion() {
+        launch()
+        let editor = openFixtureNote()
+        editor.click()
+        editor.typeKey(.end, modifierFlags: [.command])
+        editor.typeKey(.enter, modifierFlags: [])
+        editor.typeKey(.enter, modifierFlags: [])
+        editor.typeText("[[Week")
+
+        let suggestion = element(AccessibilityID.wikiLinkSuggestion(0))
+        XCTAssertTrue(suggestion.waitForExistence(timeout: 5), suggestion.debugDescription)
+        suggestion.click()
+
+        XCTAssertTrue(
+            text(in: editor).contains("[[Weekly Review]]"),
+            editor.debugDescription
+        )
+    }
+
     func testStandaloneDocumentLaunch() {
         launch(standalone: true)
         XCTAssertTrue(

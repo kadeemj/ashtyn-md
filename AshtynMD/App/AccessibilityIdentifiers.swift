@@ -24,4 +24,10 @@ enum AccessibilityID {
     static let noteInfoTags = "document.note-info-tags"
     static let noteInfoBacklinks = "document.note-info-backlinks"
     static let noteInfoLinks = "document.note-info-links"
+    static let wikiLinkAutocomplete = "document.wiki-link-autocomplete"
+    static let wikiLinkSuggestionPrefix = "document.wiki-link-suggestion"
+
+    static func wikiLinkSuggestion(_ index: Int) -> String {
+        "\(wikiLinkSuggestionPrefix).\(index)"
+    }
 }

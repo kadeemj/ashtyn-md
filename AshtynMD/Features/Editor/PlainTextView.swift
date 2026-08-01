@@ -33,6 +33,13 @@ final class PlainTextView: NSTextView {
     var ghostDismissHandler: (() -> Void)?
     /// Manual AI completion (⌃⌥Space).
     var aiCompletionRequestHandler: (() -> Void)?
+    /// Handles keyboard navigation while a wiki-link suggestion popover is up.
+    var wikiLinkAutocompleteKeyHandler: ((NSEvent) -> Bool)?
+    /// Tab accepts the selected wiki-link title before falling back to normal
+    /// indentation or AI ghost-text acceptance.
+    var wikiLinkAutocompleteAcceptHandler: (() -> Bool)?
+    /// Escape dismisses wiki-link suggestions before native completion behavior.
+    var wikiLinkAutocompleteDismissHandler: (() -> Bool)?
     /// Set for Markdown documents only. When present it owns text-storage
     /// attributes and supplies typing attributes; code documents leave it nil
     /// and keep the temporary-attribute highlight path.
@@ -61,6 +68,7 @@ final class PlainTextView: NSTextView {
     }
 
     override func keyDown(with event: NSEvent) {
+        if wikiLinkAutocompleteKeyHandler?(event) == true { return }
         let modifiers = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
         if isAICompletionShortcut(event, modifiers: modifiers) {
             requestAICompletion(nil)
@@ -466,6 +474,7 @@ final class PlainTextView: NSTextView {
     // MARK: - Tab behavior
 
     override func insertTab(_ sender: Any?) {
+        if wikiLinkAutocompleteAcceptHandler?() == true { return }
         // Tab accepts visible AI ghost text before anything else.
         if ghostText != nil, ghostAcceptHandler?() == true { return }
         let selection = selectedRange()
@@ -487,6 +496,7 @@ final class PlainTextView: NSTextView {
 
     /// Escape dismisses ghost text before the native cancel behavior.
     override func cancelOperation(_ sender: Any?) {
+        if wikiLinkAutocompleteDismissHandler?() == true { return }
         if ghostText != nil {
             ghostDismissHandler?()
             return

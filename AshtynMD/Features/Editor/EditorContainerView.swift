@@ -44,6 +44,7 @@ struct PreviewContext {
 struct EditorContainerView: View {
     let session: DocumentSession
     var previewContext: PreviewContext?
+    var libraryStore: LibraryStore? = nil
 
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     private let profilesStore = EditorProfilesStore.shared
@@ -145,7 +146,8 @@ struct EditorContainerView: View {
             session: session,
             profile: profilesStore.profile(for: session.languageID),
             theme: profilesStore.theme,
-            imageInsertion: insertImage
+            imageInsertion: insertImage,
+            libraryStore: libraryStore
         )
     }
 

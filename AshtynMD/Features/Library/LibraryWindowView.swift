@@ -693,7 +693,8 @@ struct DocumentAreaView: View {
             if let session = appModel.activeSession {
                 EditorContainerView(
                     session: session,
-                    previewContext: previewContext(for: session)
+                    previewContext: previewContext(for: session),
+                    libraryStore: appModel.session.store
                 )
                 .id(session.id)
             } else {

@@ -47,6 +47,7 @@
 		44AABDB0CC19B0D2AA740F49 /* LibraryIndexerMetadataTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DA09C3ED842E6428B8A6DEE /* LibraryIndexerMetadataTests.swift */; };
 		499C6F9E3799A5FD1F98E8E9 /* EditorContainerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54BF539E9CD4D2C6F2A35C72 /* EditorContainerView.swift */; };
 		4D81E32ECAED6719C0141A7D /* MarkdownStyleSpan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F7754F366545AAF7AA1CD7C /* MarkdownStyleSpan.swift */; };
+		4E415713354674D4BEC50563 /* WikiLinkAutocomplete.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53E7A157547BA4CF272C1B00 /* WikiLinkAutocomplete.swift */; };
 		4E84F78A3335558F3D07F5C0 /* MarkdownStyleScannerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0543D912FB18B6813AA37351 /* MarkdownStyleScannerTests.swift */; };
 		5248C43930DC08C6187266B1 /* MarkdownPreviewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01495A66537ECC1A765A7F7F /* MarkdownPreviewTests.swift */; };
 		52895DF6036E825421D581C4 /* LibraryWorkflowUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE83BEAA4A4007D3B7C8A3EA /* LibraryWorkflowUITests.swift */; };
@@ -92,6 +93,7 @@
 		B3819412F5CFB0D32A1CD9DA /* AshtynMDIcon.png in Resources */ = {isa = PBXBuildFile; fileRef = 6076FC91472027FA23BFB31B /* AshtynMDIcon.png */; };
 		B6680036F3E18E6204F44ACD /* FuzzyMatch.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B1EFC81210EE7CFCB3CE8DE /* FuzzyMatch.swift */; };
 		B95F1BF895AEFE8F1F557CCC /* UITestCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C5820E0F56DAC768A26B563 /* UITestCase.swift */; };
+		B9FBE49434BF2D5A5966A623 /* WikiLinkAutocompleteTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6DAECA166B99C7F35DD324A3 /* WikiLinkAutocompleteTests.swift */; };
 		BA4AC59ED40D951907B94E16 /* EditorWorkflowUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85AB492C4F7F265B216393DA /* EditorWorkflowUITests.swift */; };
 		BB3C823A8D86CB49F5347A2A /* RecoveryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32C6587A1E2A8A80E7BEDCF1 /* RecoveryStore.swift */; };
 		C1B0CE885823663132ACA188 /* NoteLifecycleTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6C1DDCAFA9418BC1791B65E /* NoteLifecycleTests.swift */; };
@@ -186,6 +188,7 @@
 		4C99B5341ED308057D4086A9 /* LibraryBookmarkStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryBookmarkStore.swift; sourceTree = "<group>"; };
 		513E0592281DF5654378BE76 /* AshtynMDTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AshtynMDTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		533591F6131E50A3279F68B8 /* SyntaxHighlighterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyntaxHighlighterTests.swift; sourceTree = "<group>"; };
+		53E7A157547BA4CF272C1B00 /* WikiLinkAutocomplete.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WikiLinkAutocomplete.swift; sourceTree = "<group>"; };
 		5424E075E33393BE32DFC0C4 /* GrammarRegistry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrammarRegistry.swift; sourceTree = "<group>"; };
 		54BF539E9CD4D2C6F2A35C72 /* EditorContainerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorContainerView.swift; sourceTree = "<group>"; };
 		54ED4A2DC70EB6290BEC1BD4 /* LibrarySession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibrarySession.swift; sourceTree = "<group>"; };
@@ -201,6 +204,7 @@
 		6AA97F8B54A990D3AC405DB0 /* TitleFilename.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TitleFilename.swift; sourceTree = "<group>"; };
 		6BBCE78A93CA4FDB25F633D3 /* AIProviders.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIProviders.swift; sourceTree = "<group>"; };
 		6D6109DB5413335505A9D25C /* tree-sitter-javascript */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "tree-sitter-javascript"; path = "Vendor/tree-sitter-javascript"; sourceTree = SOURCE_ROOT; };
+		6DAECA166B99C7F35DD324A3 /* WikiLinkAutocompleteTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WikiLinkAutocompleteTests.swift; sourceTree = "<group>"; };
 		6EB4FFA7C9BA22933156E119 /* NoteActionsModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoteActionsModel.swift; sourceTree = "<group>"; };
 		6F7754F366545AAF7AA1CD7C /* MarkdownStyleSpan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownStyleSpan.swift; sourceTree = "<group>"; };
 		733F95269F57D7A91ECBAF43 /* AICompletionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AICompletionTests.swift; sourceTree = "<group>"; };
@@ -408,6 +412,7 @@
 				AAE67930502B978E6210A88F /* TextFileFormatTests.swift */,
 				DFFB4C94F04FF2C4FC679510 /* TitleFilenameTests.swift */,
 				3102424BEE976DDDAA06E1A4 /* TitleRenameCoordinatorTests.swift */,
+				6DAECA166B99C7F35DD324A3 /* WikiLinkAutocompleteTests.swift */,
 			);
 			path = Tests;
 			sourceTree = "<group>";
@@ -494,6 +499,7 @@
 				D870C3B4BC666838194053F8 /* PlainTextView.swift */,
 				FE1A4F868CBEBD21EB602744 /* PlainTextView+Markdown.swift */,
 				F9C68EF03C234E8D2D9459DE /* TypewriterScroller.swift */,
+				53E7A157547BA4CF272C1B00 /* WikiLinkAutocomplete.swift */,
 			);
 			path = Editor;
 			sourceTree = "<group>";
@@ -822,6 +828,7 @@
 				79DBDA20EE044699B4F3F1B5 /* TitleRenameCoordinator.swift in Sources */,
 				B256DB991DAB69824807F01D /* TypewriterScroller.swift in Sources */,
 				221B50B41ED4BA8C5B413240 /* UITestLaunchConfiguration.swift in Sources */,
+				4E415713354674D4BEC50563 /* WikiLinkAutocomplete.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -861,6 +868,7 @@
 				6562D4A2F7E91DDB73F36A4D /* TextFileFormatTests.swift in Sources */,
 				823513D3322A68A3E39D4E08 /* TitleFilenameTests.swift in Sources */,
 				1E74E69E5AE0539F370B4F50 /* TitleRenameCoordinatorTests.swift in Sources */,
+				B9FBE49434BF2D5A5966A623 /* WikiLinkAutocompleteTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

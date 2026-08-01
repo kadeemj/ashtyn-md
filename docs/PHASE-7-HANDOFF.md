@@ -1,8 +1,8 @@
 # Phase 7 — Bear-like note-taking: Handoff
 
 **Date:** 2026-08-01
-**Branch:** `phase-7` (13 commits ahead of `main`, not merged)
-**State:** Gates 0–4 complete; Task 27 complete (27 of 32 tasks). Gate 5 is in progress.
+**Branch:** `phase-7` (3 commits ahead of `main`, not merged)
+**State:** Gates 0–4 complete; Task 28 complete (28 of 32 tasks). Gate 5 is in progress.
 **Plan:** `/Users/kadeem/.claude/plans/lets-create-a-better-delegated-crayon.md`
 
 ## Goal
@@ -25,7 +25,7 @@ Four decisions were locked with the user before implementation:
 
 ## Current state
 
-**Tests: 446 passed, 5 skipped (451 total) in the unit target, all passing.**
+**Tests: 454 passed, 5 skipped (459 total) in the unit target, all passing.**
 Baseline before Gate 4 was 435 unit tests in 41 suites; the original phase
 baseline was 167 in 23 suites.
 
@@ -37,7 +37,7 @@ xcodebuild -project AshtynMD.xcodeproj -scheme AshtynMD -configuration Debug tes
 The 10,000-file performance gate still passes at 3.30 s
 (`./script/performance_gate.sh`).
 
-**XCUITests: 19 passing**, including the Gate 5 Note Info inspector flow.
+**XCUITests: 20 passing**, including the Gate 5 Note Info inspector and wiki-link autocomplete flows.
 
 ### Commits
 
@@ -341,13 +341,17 @@ Store-side work is **already done** in Gate 2: `resolveWikiLink`, `backlinks`,
   section under the editor (that fights the scroll view and breaks the
   editor/split/preview modes). Stats compute from the *editor buffer* with a
   300 ms debounce, and the panel resolves backlinks and outgoing wiki links
-  through the existing actor-backed store APIs. The focused unit and UI tests,
-  full unit suite, and all 19 macOS UI tests pass.
-- **Task 28 — next** — wiki-link autocomplete popover. **Do not reuse** the existing
-  completion hook (`EditorTextView.swift:204`): it only fires from explicit
-  ⌃Space, `forPartialWordRange` excludes `[[` and stops at spaces, it returns
-  bare `[String]`, and it is synchronous while title lookup is an actor call.
-  Model it on `AICompletionController` instead.
+  through the existing actor-backed store APIs. Its focused unit and UI tests
+  passed; the current suite counts are listed above.
+- **Task 28 — complete.** Wiki-link autocomplete is a separate AppKit/SwiftUI
+  popover driven from the editor's text-change and selection hooks. It detects
+  an unfinished `[[target` range, accepts spaces, debounces and cancels
+  actor-backed `titleSuggestions` lookups, and keeps stale results from
+  replacing a newer query. Up/Down, Return, Tab, and Escape are handled by the
+  editor responder, and accepting a result replaces only the target range in
+  one undoable edit. Focused unit coverage and the fixture-backed UI selection
+  flow pass alongside the full suites. The existing Control-Space completion
+  hook remains the ordinary offline completion path.
 - **Task 29** — `SearchSnippet` / `SearchQuery` / Quick Open (⇧⌘O; ⌘K is Link).
   **Change the FTS snippet delimiters** to U+E000-range private-use scalars:
   FTS5's `snippet()` does not escape its own markers, so a note containing a

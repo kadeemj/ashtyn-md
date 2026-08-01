@@ -10,9 +10,12 @@ struct EditorTextView: NSViewRepresentable {
     let theme: EditorTheme
     /// Writes image data to Assets and returns the relative Markdown path.
     var imageInsertion: ((Data, String) -> String?)?
+    /// The active library store. Standalone documents leave this nil, which
+    /// keeps wiki-link autocomplete unavailable outside a library.
+    var libraryStore: LibraryStore? = nil
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(session: session)
+        Coordinator(session: session, libraryStore: libraryStore)
     }
 
     func makeNSView(context: Context) -> NSScrollView {
@@ -71,6 +74,7 @@ struct EditorTextView: NSViewRepresentable {
         context.coordinator.applyCapabilities(to: textView)
         context.coordinator.applyText(session.text)
         context.coordinator.applyProfile(profile, theme: theme, for: session.languageID, in: scrollView)
+        context.coordinator.configureWikiLinkAutocomplete(for: textView)
         context.coordinator.observeScrolling(of: scrollView)
         context.coordinator.restoreViewState(in: scrollView)
         DispatchQueue.main.async { [weak textView] in
@@ -122,9 +126,12 @@ struct EditorTextView: NSViewRepresentable {
         /// which would otherwise rewrite the stored offset on every keystroke.
         var isPerformingTypewriterScroll = false
         let aiController = AICompletionController()
+        private let libraryStore: LibraryStore?
+        private var wikiLinkAutocomplete: WikiLinkAutocompleteController?
 
-        init(session: DocumentSession) {
+        init(session: DocumentSession, libraryStore: LibraryStore? = nil) {
             self.session = session
+            self.libraryStore = libraryStore
             #if DEBUG
             if UITestLaunchConfiguration.current.isEnabled {
                 aiController.providerFactory = { UITestAIProvider() }
@@ -151,6 +158,24 @@ struct EditorTextView: NSViewRepresentable {
                 self.aiController.requestManually { [weak self] in
                     self?.makeAIRequest(trigger: .manual)
                 }
+            }
+        }
+
+        func configureWikiLinkAutocomplete(for textView: PlainTextView) {
+            guard wikiLinkAutocomplete == nil else { return }
+            let controller = WikiLinkAutocompleteController(
+                textView: textView,
+                store: libraryStore
+            )
+            wikiLinkAutocomplete = controller
+            textView.wikiLinkAutocompleteKeyHandler = { [weak controller] event in
+                controller?.handleKeyDown(event) == true
+            }
+            textView.wikiLinkAutocompleteAcceptHandler = { [weak controller] in
+                controller?.acceptSelection() == true
+            }
+            textView.wikiLinkAutocompleteDismissHandler = { [weak controller] in
+                controller?.dismiss() == true
             }
         }
 
@@ -198,6 +223,7 @@ struct EditorTextView: NSViewRepresentable {
             if let markdownStyler {
                 markdownStyler.restyle(afterEditIn: lastEditedRange ?? textView.selectedRange())
             }
+            wikiLinkAutocomplete?.update()
             // Any edit cancels a stale AI request; automatic completion
             // requires an empty selection and finished input composition.
             aiController.noteEdit(
@@ -217,6 +243,7 @@ struct EditorTextView: NSViewRepresentable {
             session.viewState.cursorLocation = range.location
             session.viewState.selectionLength = range.length
             aiController.noteCursorMovement()
+            wikiLinkAutocomplete?.update()
             // Markers reveal on the caret's block, and focus mode follows it.
             markdownStyler?.selectionDidChange(to: range)
             typewriterScroller?.caretDidMove()
@@ -449,6 +476,7 @@ struct EditorTextView: NSViewRepresentable {
 
             let previousSelection = textView.selectedRange()
             textView.string = text
+            wikiLinkAutocomplete?.dismiss()
             let length = (text as NSString).length
             let location = min(previousSelection.location, length)
             textView.setSelectedRange(NSRange(location: location, length: 0))
