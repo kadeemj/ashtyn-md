@@ -4,6 +4,8 @@ Ashtyn MD is a native macOS notes-first Markdown and code editor with a Bear-lik
 
 The app combines a SwiftUI library shell with an AppKit editor. Markdown files get rich inline typography while code files keep tree-sitter syntax highlighting, and the SQLite/FTS5 index can be rebuilt from the filesystem at any time.
 
+Maintained by [Kadeem Jeffery](https://github.com/kadeemj).
+
 ## Highlights
 
 - Plain Markdown files remain the source of truth; the local index is disposable.
