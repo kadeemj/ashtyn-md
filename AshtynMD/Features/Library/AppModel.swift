@@ -24,6 +24,9 @@ final class AppModel {
 
     private(set) var openError: String?
     private(set) var tagRewriteUndoAvailable = false
+    /// Bumps when indexed files change so secondary surfaces can refresh
+    /// actor-backed queries without polling.
+    private(set) var libraryChangeGeneration = 0
 
     /// Per-library opt-in: render raw HTML in Markdown previews.
     var allowRawHTML = false {
@@ -220,6 +223,7 @@ final class AppModel {
     }
 
     private func refreshLists() {
+        libraryChangeGeneration &+= 1
         noteList.refresh(using: session)
         tags.refresh(using: session)
     }

@@ -682,6 +682,7 @@ struct SearchColumnView: View {
 
 struct DocumentAreaView: View {
     @Environment(AppModel.self) private var appModel
+    @State private var isNoteInfoPresented = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -703,6 +704,24 @@ struct DocumentAreaView: View {
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
+        }
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button("Note Info", systemImage: "info.circle") {
+                    isNoteInfoPresented.toggle()
+                }
+                .disabled(appModel.activeSession == nil)
+                .help("Show note information and backlinks")
+                .accessibilityIdentifier(AccessibilityID.noteInfoInspector)
+            }
+        }
+        .inspector(isPresented: $isNoteInfoPresented) {
+            if let session = appModel.activeSession {
+                NoteInfoInspectorView(session: session)
+            }
+        }
+        .onChange(of: appModel.activeSession?.id) { _, id in
+            if id == nil { isNoteInfoPresented = false }
         }
     }
 }

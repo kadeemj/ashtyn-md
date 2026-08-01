@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-01
 **Branch:** `phase-7` (13 commits ahead of `main`, not merged)
-**State:** Gates 0–4 complete (26 of 32 tasks). Gates 5–6 not started.
+**State:** Gates 0–4 complete; Task 27 complete (27 of 32 tasks). Gate 5 is in progress.
 **Plan:** `/Users/kadeem/.claude/plans/lets-create-a-better-delegated-crayon.md`
 
 ## Goal
@@ -25,7 +25,7 @@ Four decisions were locked with the user before implementation:
 
 ## Current state
 
-**Tests: 444 passed, 5 skipped (449 total) in the unit target, all passing.**
+**Tests: 446 passed, 5 skipped (451 total) in the unit target, all passing.**
 Baseline before Gate 4 was 435 unit tests in 41 suites; the original phase
 baseline was 167 in 23 suites.
 
@@ -37,7 +37,7 @@ xcodebuild -project AshtynMD.xcodeproj -scheme AshtynMD -configuration Debug tes
 The 10,000-file performance gate still passes at 3.30 s
 (`./script/performance_gate.sh`).
 
-**XCUITests have not run since Gate 1.** See *Known problems* below.
+**XCUITests: 19 passing**, including the Gate 5 Note Info inspector flow.
 
 ### Commits
 
@@ -331,16 +331,19 @@ Undo is snapshot-based into
 `AppSupportPaths.libraryDirectory(forRoot:)/TagRewrites/<uuid>/`, capped at
 2,000 files, behind a confirmation sheet.
 
-### Gate 5 — Links, search, export, info panel (Tasks 27–30) — **next**
+### Gate 5 — Links, search, export, info panel (Tasks 27–30) — **in progress**
 
 Store-side work is **already done** in Gate 2: `resolveWikiLink`, `backlinks`,
 `outgoingLinks`, `titleSuggestions` all exist and are tested.
 
-- **Task 27** — backlinks + info panel in a `.inspector` (macOS 14+), not a
+- **Task 27 — complete.** Backlinks + note info panel are in a `.inspector`
+  (macOS 14+), not a
   section under the editor (that fights the scroll view and breaks the
-  editor/split/preview modes). Info-panel stats must compute from the *editor
-  buffer* with a 300 ms debounce, not the indexed row, which lags by a save.
-- **Task 28** — wiki-link autocomplete popover. **Do not reuse** the existing
+  editor/split/preview modes). Stats compute from the *editor buffer* with a
+  300 ms debounce, and the panel resolves backlinks and outgoing wiki links
+  through the existing actor-backed store APIs. The focused unit and UI tests,
+  full unit suite, and all 19 macOS UI tests pass.
+- **Task 28 — next** — wiki-link autocomplete popover. **Do not reuse** the existing
   completion hook (`EditorTextView.swift:204`): it only fires from explicit
   ⌃Space, `forPartialWordRange` excludes `[[` and stops at spaces, it returns
   bare `[String]`, and it is synchronous while title lookup is an actor call.

@@ -71,7 +71,7 @@ final class LibraryWorkflowUITests: UITestCase {
         launch()
         openFixtureNote()
         chooseSidebarItem("Code")
-        let source = file(named: "sample.swift")
+        let source = file(withName: "sample.swift")
         XCTAssertTrue(source.waitForExistence(timeout: 10))
         source.click()
         XCTAssertTrue(tab(named: "Fixture Note.md").exists)
@@ -118,5 +118,32 @@ final class LibraryWorkflowUITests: UITestCase {
 
         chooseSidebarItem("alpha")
         XCTAssertTrue(file(named: "Weekly Review").waitForExistence(timeout: 10))
+    }
+
+    func testNoteInfoShowsStatisticsAndBacklinks() {
+        launch()
+        openFixtureNote()
+
+        let infoButton = app.buttons[AccessibilityID.noteInfoInspector]
+        XCTAssertTrue(infoButton.waitForExistence(timeout: 10))
+        infoButton.click()
+
+        XCTAssertTrue(element(AccessibilityID.noteInfoStatistics)
+            .waitForExistence(timeout: 10))
+        let readingTime = app.staticTexts
+            .matching(NSPredicate(format: "value == %@", "1 min"))
+            .firstMatch
+        XCTAssertTrue(readingTime.waitForExistence(timeout: 10))
+
+        let backlinksHeading = app.staticTexts[AccessibilityID.noteInfoBacklinks]
+        XCTAssertTrue(backlinksHeading.waitForExistence(timeout: 10))
+        let backlink = app.buttons
+            .matching(NSPredicate(
+                format: "identifier == %@ AND label CONTAINS %@",
+                AccessibilityID.noteInfoBacklinks,
+                "Weekly Review"
+            ))
+            .firstMatch
+        XCTAssertTrue(backlink.waitForExistence(timeout: 10), app.debugDescription)
     }
 }

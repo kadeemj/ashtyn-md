@@ -17,4 +17,11 @@ enum AccessibilityID {
     static let largeFileMode = "document.large-file-mode"
     static let conflictCompare = "conflict.compare"
     static let moveToFolderSheet = "library.move-to-folder"
+    static let noteInfoInspector = "document.note-info-inspector"
+    static let noteInfoStatistics = "document.note-info-statistics"
+    static let noteInfoReadingTime = "document.note-info-reading-time"
+    static let noteInfoTasks = "document.note-info-tasks"
+    static let noteInfoTags = "document.note-info-tags"
+    static let noteInfoBacklinks = "document.note-info-backlinks"
+    static let noteInfoLinks = "document.note-info-links"
 }
