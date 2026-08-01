@@ -241,6 +241,7 @@ struct AshtynMDApp: App {
 
         Settings {
             SettingsView()
+                .environment(appModel)
         }
     }
 

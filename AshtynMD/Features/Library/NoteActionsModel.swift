@@ -13,9 +13,12 @@ final class NoteActionsModel {
         var session: () -> LibrarySession
         var didChangeFiles: () -> Void
         var didChangeFolders: () -> Void
+        var reindex: () -> Void
         var openFile: (URL) -> Void
+        var openDocument: (URL) -> DocumentSession?
         var closeTab: (URL) -> Void
         var noteFileMoved: (URL, URL) -> Void
+        var requestTitleRename: (URL) -> Void
         var reportError: (String) -> Void
     }
 
@@ -157,6 +160,26 @@ final class NoteActionsModel {
         }
     }
 
+    /// Re-enables title-managed filenames after a user explicitly chose a
+    /// filename in the Rename dialog.
+    func useTitleAsFilename(_ record: FileRecord) {
+        guard let store = session.store else { return }
+        let path = record.relativePath
+        Task {
+            do {
+                try await store.setTitleIsManaged(true, relativePath: path)
+                if let url = session.absoluteURL(of: record) {
+                    dependencies.requestTitleRename(url)
+                }
+                dependencies.didChangeFiles()
+            } catch {
+                dependencies.reportError(
+                    "Couldn’t re-enable title filenames: \(error.localizedDescription)"
+                )
+            }
+        }
+    }
+
     func duplicate(_ record: FileRecord) {
         guard let url = session.absoluteURL(of: record) else { return }
         do {
@@ -167,27 +190,119 @@ final class NoteActionsModel {
         }
     }
 
-    // MARK: - Trash
+    // MARK: - Lifecycle
 
-    /// Sends notes to the system Trash.
-    ///
-    /// Gate 4 replaces this with a restorable in-library trash; until then it
-    /// keeps the pre-Phase-7 behavior.
-    func moveToTrash(_ records: [FileRecord]) {
-        guard let store = session.store else { return }
+    func archive(_ records: [FileRecord]) {
+        guard let root = session.root?.url else { return }
         for record in records {
             guard let url = session.absoluteURL(of: record) else { continue }
             do {
-                dependencies.closeTab(url)
-                try FileOperations.trash(url)
-                let path = record.relativePath
-                Task { try? await store.removeFile(relativePath: path) }
+                let archived = try NoteLifecycle.archive(url, in: root)
+                dependencies.noteFileMoved(url, archived)
             } catch {
                 dependencies.reportError(
-                    "Couldn’t move “\(record.name)” to Trash: \(error.localizedDescription)"
+                    "Couldn’t archive “\(record.name)”: \(error.localizedDescription)"
                 )
             }
         }
         dependencies.didChangeFiles()
+        dependencies.reindex()
+    }
+
+    func unarchive(_ records: [FileRecord]) {
+        guard let root = session.root?.url else { return }
+        for record in records {
+            guard let url = session.absoluteURL(of: record) else { continue }
+            do {
+                let restored = try NoteLifecycle.unarchive(url, in: root)
+                dependencies.noteFileMoved(url, restored)
+            } catch {
+                dependencies.reportError(
+                    "Couldn’t unarchive “\(record.name)”: \(error.localizedDescription)"
+                )
+            }
+        }
+        dependencies.didChangeFiles()
+        dependencies.reindex()
+    }
+
+    func restoreFromTrash(_ records: [FileRecord]) {
+        guard let root = session.root?.url else { return }
+        for record in records {
+            guard let url = session.absoluteURL(of: record) else { continue }
+            do {
+                let restored = try NoteLifecycle.restore(url, in: root)
+                dependencies.noteFileMoved(url, restored)
+            } catch {
+                dependencies.reportError(
+                    "Couldn’t restore “\(record.name)”: \(error.localizedDescription)"
+                )
+            }
+        }
+        dependencies.didChangeFiles()
+        dependencies.reindex()
+    }
+
+    /// Moves notes to Ashtyn MD's recoverable in-library Trash.
+    func moveToTrash(_ records: [FileRecord]) {
+        guard let root = session.root?.url else { return }
+        Task { [weak self] in
+            guard let self else { return }
+            for record in records {
+                guard let url = session.absoluteURL(of: record),
+                      await saveAndCloseIfOpen(url, name: record.name) else { continue }
+                do {
+                    _ = try NoteLifecycle.trash(
+                        url,
+                        in: root,
+                        title: record.title.isEmpty ? record.name : record.title
+                    )
+                } catch {
+                    dependencies.reportError(
+                        "Couldn’t move “\(record.name)”: \(error.localizedDescription)"
+                    )
+                }
+            }
+            dependencies.didChangeFiles()
+            dependencies.reindex()
+        }
+    }
+
+    /// Sends a note from Ashtyn MD's Trash to the macOS system Trash, making
+    /// this the final recovery layer.
+    func deletePermanently(_ records: [FileRecord]) {
+        guard let store = session.store else { return }
+        Task { [weak self] in
+            guard let self else { return }
+            for record in records {
+                guard let url = session.absoluteURL(of: record),
+                      await saveAndCloseIfOpen(url, name: record.name) else { continue }
+                do {
+                    try FileOperations.trash(url)
+                    try await store.removeFile(relativePath: record.relativePath)
+                } catch {
+                    dependencies.reportError(
+                        "Couldn’t delete “\(record.name)”: \(error.localizedDescription)"
+                    )
+                }
+            }
+            dependencies.didChangeFiles()
+            dependencies.reindex()
+        }
+    }
+
+    private func saveAndCloseIfOpen(_ url: URL, name: String) async -> Bool {
+        guard let document = dependencies.openDocument(url) else { return true }
+        await document.save(reason: .explicit)
+        guard document.conflict == .none,
+              !document.isDirty,
+              document.lastSaveError == nil else {
+            dependencies.reportError(
+                "Couldn’t remove “\(name)” because its latest edits could not be saved."
+            )
+            return false
+        }
+        dependencies.closeTab(url)
+        return true
     }
 }

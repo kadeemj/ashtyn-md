@@ -20,6 +20,7 @@ struct FileItem: Identifiable, Hashable, Sendable {
 enum LibraryBrowser {
     static let excludedDirectoryNames: Set<String> = [
         ".git", ".svn", ".hg", "node_modules", ".build", "DerivedData",
+        NoteLifecycle.trashDirectoryName, NoteLifecycle.archiveDirectoryName,
     ]
 
     static let maximumTreeDepth = 12

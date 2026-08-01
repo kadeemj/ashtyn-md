@@ -107,12 +107,65 @@ actor LibraryIndexer {
             }
         }
         try await indexBatch(batch)
+        let lifecyclePaths = try await indexLifecycleFiles()
+        seenPaths.formUnion(lifecyclePaths)
         try await store.removeFilesNotIn(seenPaths)
         // Once per scan, never per file: a note losing its last tag should not
         // make every other note pay for a prune.
         _ = try await store.pruneOrphanTags()
         onProgress?(IndexingProgress(scanned: seenPaths.count, total: seenPaths.count))
         onChange()
+    }
+
+    /// Indexes the two hidden, app-owned recovery trees separately from the
+    /// user-visible library. Their rows retain the real on-disk path so they
+    /// can still be opened, while the store mirrors their lifecycle state.
+    private func indexLifecycleFiles() async throws -> Set<String> {
+        var seen = Set<String>()
+
+        let archiveRoot = root.appendingPathComponent(
+            NoteLifecycle.archiveDirectoryName, isDirectory: true
+        )
+        if FileManager.default.fileExists(atPath: archiveRoot.path) {
+            let enumerator = FileManager.default.enumerator(
+                at: archiveRoot,
+                includingPropertiesForKeys: [.isDirectoryKey, .fileSizeKey, .contentModificationDateKey],
+                options: []
+            )
+            while let item = enumerator?.nextObject() as? URL {
+                let values = try? item.resourceValues(forKeys: [.isDirectoryKey])
+                if values?.isDirectory == true { continue }
+                guard item.lastPathComponent != NoteLifecycle.trashMetadataName,
+                      LibraryBrowser.isSupportedTextFile(item),
+                      let relative = relativePath(of: item) else { continue }
+                seen.insert(relative)
+                try await indexFileIfNeeded(at: item, lifecycle: .archived)
+            }
+        }
+
+        let trashRoot = root.appendingPathComponent(
+            NoteLifecycle.trashDirectoryName, isDirectory: true
+        )
+        if FileManager.default.fileExists(atPath: trashRoot.path) {
+            let enumerator = FileManager.default.enumerator(
+                at: trashRoot,
+                includingPropertiesForKeys: [.isDirectoryKey, .fileSizeKey, .contentModificationDateKey],
+                options: []
+            )
+            while let item = enumerator?.nextObject() as? URL {
+                let values = try? item.resourceValues(forKeys: [.isDirectoryKey])
+                if values?.isDirectory == true || item.lastPathComponent == NoteLifecycle.trashMetadataName {
+                    continue
+                }
+                guard LibraryBrowser.isSupportedTextFile(item),
+                      let relative = relativePath(of: item),
+                      let metadata = try? NoteLifecycle.metadata(for: item) else { continue }
+                seen.insert(relative)
+                try await indexFileIfNeeded(at: item, lifecycle: .trashed(metadata))
+            }
+        }
+
+        return seen
     }
 
     private func indexBatch(_ urls: [URL]) async throws {
@@ -124,7 +177,16 @@ actor LibraryIndexer {
 
     /// Indexes one file when its size/mtime differ from the stored row, or
     /// when the row is missing. Recognizes moves via the resource identifier.
-    private func indexFileIfNeeded(at url: URL) async throws {
+    private enum LifecycleLocation: Sendable, Equatable {
+        case active
+        case archived
+        case trashed(NoteLifecycle.TrashMetadata)
+    }
+
+    private func indexFileIfNeeded(
+        at url: URL,
+        lifecycle: LifecycleLocation = .active
+    ) async throws {
         guard let relative = relativePath(of: url),
               let disk = SaveCoordinator.diskState(of: url),
               let attributes = try? FileManager.default.attributesOfItem(atPath: url.path)
@@ -135,7 +197,8 @@ actor LibraryIndexer {
             let sameStamp = abs(existing.modifiedAt.timeIntervalSince1970 - disk.modificationDate.timeIntervalSince1970) < 0.001
             // reindexPending overrides the stamp check: after the v2 migration
             // size and mtime match but the derived columns are all empty.
-            if sameStamp && existing.size == size && !existing.reindexPending { return }
+            if sameStamp && existing.size == size && !existing.reindexPending,
+               lifecycleMatches(existing, lifecycle) { return }
         } else if let moved = try await store.record(forResourceID: disk.resourceID) {
             // Same inode, new path: it moved. Keep identity, then fall through
             // to refresh metadata (content may also have changed).
@@ -168,6 +231,28 @@ actor LibraryIndexer {
             update.parsed = MarkdownMetadata.parse(content)
         }
         try await store.upsertFile(update)
+        switch lifecycle {
+        case .active:
+            try await store.markRestored(relativePath: relative)
+        case .archived:
+            try await store.markArchived(relativePath: relative)
+        case .trashed(let metadata):
+            try await store.markTrashed(relativePath: relative, metadata: metadata)
+        }
+    }
+
+    private func lifecycleMatches(_ record: FileRecord, _ lifecycle: LifecycleLocation) -> Bool {
+        switch lifecycle {
+        case .active:
+            return !record.isArchived && record.trashedAt == nil
+        case .archived:
+            return record.isArchived && record.trashedAt == nil
+        case .trashed(let metadata):
+            return record.trashedOriginPath == metadata.originalRelativePath &&
+                record.trashedAt.map {
+                    abs($0.timeIntervalSince1970 - metadata.trashedAt.timeIntervalSince1970) < 0.001
+                } == true
+        }
     }
 
     /// Repoints a row after the app itself renames a file.
@@ -204,6 +289,17 @@ actor LibraryIndexer {
 
     private func handleEventPaths(_ paths: [String]) async {
         var changed = false
+
+        // The normal enumerator deliberately skips these directories. A
+        // lifecycle mutation can therefore only be reconciled by the dedicated
+        // pass, which also reads Trash manifests.
+        if paths.contains(where: { path in
+            guard let relative = relativePath(of: URL(fileURLWithPath: path)) else { return false }
+            return NoteLifecycle.isLifecyclePath(relative)
+        }) {
+            try? await fullScan()
+            return
+        }
 
         // Paths that still exist are processed before paths that are gone.
         //

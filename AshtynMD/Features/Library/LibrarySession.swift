@@ -56,6 +56,10 @@ final class LibrarySession {
         try await indexer?.start()
     }
 
+    func reindex() {
+        Task { try? await indexer?.fullScan() }
+    }
+
     /// Tears down the index and releases the security scope. Returns the work
     /// that has to finish asynchronously so the caller can order it.
     func detach() -> (indexer: LibraryIndexer?, store: LibraryStore?, root: LibraryBookmarkStore.ResolvedRoot?) {

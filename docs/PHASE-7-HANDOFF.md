@@ -1,8 +1,8 @@
 # Phase 7 — Bear-like note-taking: Handoff
 
-**Date:** 2026-07-31
-**Branch:** `phase-7` (9 commits ahead of `main`, not merged)
-**State:** Gates 0–3 complete (22 of 32 tasks). Gates 4–6 not started.
+**Date:** 2026-08-01
+**Branch:** `phase-7` (13 commits ahead of `main`, not merged)
+**State:** Gates 0–4 complete (26 of 32 tasks). Gates 5–6 not started.
 **Plan:** `/Users/kadeem/.claude/plans/lets-create-a-better-delegated-crayon.md`
 
 ## Goal
@@ -25,15 +25,16 @@ Four decisions were locked with the user before implementation:
 
 ## Current state
 
-**Tests: 435 unit tests in 41 suites, ~5 s, all passing.** Baseline before the
-phase was 167 in 23 suites.
+**Tests: 444 passed, 5 skipped (449 total) in the unit target, all passing.**
+Baseline before Gate 4 was 435 unit tests in 41 suites; the original phase
+baseline was 167 in 23 suites.
 
 ```bash
 xcodegen generate
 xcodebuild -project AshtynMD.xcodeproj -scheme AshtynMD -configuration Debug test -only-testing:AshtynMDTests
 ```
 
-The 10,000-file performance gate still passes at 3.4 s
+The 10,000-file performance gate still passes at 3.30 s
 (`./script/performance_gate.sh`).
 
 **XCUITests have not run since Gate 1.** See *Known problems* below.
@@ -170,6 +171,29 @@ selection still captures to the Inbox and seeds the tag into the body, because
 a tag is not a location. Launch restores tabs and cursor positions but always
 selects the Inbox.
 
+### Gate 4 — Lifecycle and title↔filename sync
+
+Gate 4 is complete. `NoteLifecycle` keeps recovery state on disk under `.archive/`
+and `.trash/`, with collision-safe restore and Trash manifests that preserve the
+original relative path. The indexer has a dedicated lifecycle pass so the
+disposable SQLite index can be rebuilt without resurrecting archived or trashed
+notes; archived previews resolve links and assets against their original
+directory.
+
+Open Markdown sessions can opt into a debounced first-line → filename rename.
+The coordinator saves before renaming, sanitizes unsafe names to the 120-byte
+contract, preserves index identity, retargets the open session, and stops after
+surfacing a failure. The setting is persisted per library as `titleRename.v1`.
+
+Tag rename/delete rewrites use the shared Markdown scanner, apply ranges from
+back to front, and keep byte-exact undo snapshots in Application Support with a
+2,000-file cap. Archive, in-library Trash, permanent deletion, restore, tag
+rewrite, and title-management actions are wired into the library UI.
+
+Focused lifecycle/title/tag tests, the full unit target, and the performance
+gate pass. XCUITests remain unverified because the existing macOS automation/TCC
+blocker is still present.
+
 ---
 
 ## Known problems
@@ -226,21 +250,23 @@ considerably worse and cost significant time.
   tests cover. Took the plan's own documented fallback: presentation state stays
   view-local (the Move to… sheet uses `LibraryCommandRequests`, a relay, rather
   than model state) so two windows will not fight once the split lands.
-- **Trash is still the system Trash.** `NoteActionsModel.moveToTrash` keeps
-  pre-Phase-7 behavior; the note list's Trash "Restore" button is present but
-  disabled. Gate 4 replaces this.
+- **System Trash remains the final recovery layer.** Gate 4 now uses the
+  in-library `.trash/` contract for ordinary deletion; "Delete Permanently"
+  sends the already-trashed note to the macOS system Trash.
 - `MarkerVisibility.hidden` colors markers but does not yet collapse them to
   zero width; the glyph suppression belongs in a layout-manager delegate.
 
 ---
 
-## Next steps
+## Gate plan and next steps
 
-### Gate 4 — Lifecycle and title↔filename sync (Tasks 23–26) — **the riskiest gate**
+### Gate 4 — Lifecycle and title↔filename sync (Tasks 23–26) — **complete**
 
-Its prerequisite (the FSEvents identity fix) already landed in Gate 2.
+Its prerequisite (the FSEvents identity fix) landed in Gate 2. The implementation
+and verification summary is above; the original task contract is retained here
+as a reference for the on-disk behavior.
 
-**Task 23 — `NoteLifecycle`** (`Core/FileSystem/NoteLifecycle.swift`, new).
+**Task 23 — `NoteLifecycle` — complete** (`Core/FileSystem/NoteLifecycle.swift`).
 Trash and archive live **on disk, not in the index**, because `LibraryStore` is
 documented as disposable — an index-only `trashed_at` would resurrect every
 trashed note when that promise is exercised.
@@ -261,11 +287,11 @@ trashed note when that promise is exercised.
   links resolve differently. `DocumentAreaView.previewContext` must resolve
   archived notes against their original directory.
 
-**Task 24** — lifecycle store methods (`markArchived`, `markTrashed`,
+**Task 24 — complete** — lifecycle store methods (`markArchived`, `markTrashed`,
 `markRestored`) and a dedicated indexer pass over `.trash`/`.archive`. The
 store queries (`archivedNotes`, `trashedNotes`) already exist from Gate 2.
 
-**Task 25 — `TitleFilename` + `TitleRenameCoordinator`.** Owned by neither
+**Task 25 — `TitleFilename` + `TitleRenameCoordinator` — complete.** Owned by neither
 `DocumentSession` (also used by `StandaloneDocumentView` for Finder-opened files
 outside any library, where renaming would be flatly wrong) nor `AppModel`.
 The hook already exists: `DocumentSession.textDidChange` fires from
@@ -297,7 +323,7 @@ sanitize → bail if the base already matches → `LibraryBrowser.availableURL` 
   model renames as delete+create; git will not detect a rename on a nearly-empty
   new note.
 
-**Task 26 — `TagRewriter`.** Rename/delete a tag by rewriting note text (tags
+**Task 26 — `TagRewriter` — complete.** Rename/delete a tag by rewriting note text (tags
 are derived from text, so the tables re-derive themselves). Candidate set is
 free from the closure rows via `LibraryStore.filesTagged(withKeyOrDescendant:)`
 — already implemented. Apply edits **back-to-front** so ranges stay valid.
@@ -305,7 +331,7 @@ Undo is snapshot-based into
 `AppSupportPaths.libraryDirectory(forRoot:)/TagRewrites/<uuid>/`, capped at
 2,000 files, behind a confirmation sheet.
 
-### Gate 5 — Links, search, export, info panel (Tasks 27–30)
+### Gate 5 — Links, search, export, info panel (Tasks 27–30) — **next**
 
 Store-side work is **already done** in Gate 2: `resolveWikiLink`, `backlinks`,
 `outgoingLinks`, `titleSuggestions` all exist and are tested.

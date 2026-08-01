@@ -1,14 +1,42 @@
 import SwiftUI
 
 struct SettingsView: View {
+    @Environment(AppModel.self) private var appModel
+
     var body: some View {
         TabView {
             EditorSettingsView()
                 .tabItem { Label("Editor", systemImage: "square.and.pencil") }
             AISettingsView()
                 .tabItem { Label("AI", systemImage: "sparkles") }
+            LibrarySettingsView()
+                .tabItem { Label("Library", systemImage: "books.vertical") }
         }
         .frame(width: 520, height: 560)
+    }
+}
+
+struct LibrarySettingsView: View {
+    @Environment(AppModel.self) private var appModel
+
+    var body: some View {
+        @Bindable var model = appModel
+        Form {
+            Section("Current Library") {
+                Toggle(
+                    "Rename files to match the first line",
+                    isOn: $model.titleRenameEnabled
+                )
+                .disabled(appModel.libraryRoot == nil)
+                .help("When enabled, Markdown note filenames follow their first line after a short pause.")
+
+                if appModel.libraryRoot == nil {
+                    Text("Choose a library to configure its note behavior.")
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+        .formStyle(.grouped)
     }
 }
 

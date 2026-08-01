@@ -693,6 +693,48 @@ actor LibraryStore {
         )
     }
 
+    // MARK: - On-disk lifecycle mirrors
+
+    func markArchived(relativePath: String) throws {
+        try database.run(
+            """
+            UPDATE files
+            SET is_archived = 1, trashed_at = NULL, trashed_origin_path = NULL
+            WHERE relative_path = ?
+            """,
+            [.text(relativePath)]
+        )
+    }
+
+    func markTrashed(
+        relativePath: String,
+        metadata: NoteLifecycle.TrashMetadata
+    ) throws {
+        try database.run(
+            """
+            UPDATE files
+            SET is_archived = 0, trashed_at = ?, trashed_origin_path = ?
+            WHERE relative_path = ?
+            """,
+            [
+                .double(metadata.trashedAt.timeIntervalSince1970),
+                .text(metadata.originalRelativePath),
+                .text(relativePath),
+            ]
+        )
+    }
+
+    func markRestored(relativePath: String) throws {
+        try database.run(
+            """
+            UPDATE files
+            SET is_archived = 0, trashed_at = NULL, trashed_origin_path = NULL
+            WHERE relative_path = ?
+            """,
+            [.text(relativePath)]
+        )
+    }
+
     // MARK: - Note lists
 
     /// Active notes: not archived, not trashed.

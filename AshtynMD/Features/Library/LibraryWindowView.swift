@@ -91,6 +91,9 @@ struct SidebarView: View {
     @Environment(AppModel.self) private var appModel
     /// Folders are collapsed by default: tags are the primary structure now.
     @State private var foldersExpanded = false
+    @State private var tagToRename: TagNode?
+    @State private var tagToDelete: TagNode?
+    @State private var tagRenameText = ""
 
     var body: some View {
         @Bindable var noteList = appModel.noteList
@@ -136,6 +139,45 @@ struct SidebarView: View {
         }
         .listStyle(.sidebar)
         .accessibilityIdentifier(AccessibilityID.sidebar)
+        .alert("Rename Tag", isPresented: tagRenameAlertBinding) {
+            TextField("Tag", text: $tagRenameText)
+            Button("Rename") {
+                if let tagToRename {
+                    appModel.renameTag(tagToRename.key, to: tagRenameText)
+                }
+                self.tagToRename = nil
+            }
+            Button("Cancel", role: .cancel) { tagToRename = nil }
+        }
+        .confirmationDialog(
+            "Delete #\(tagToDelete?.displayPath ?? "")?",
+            isPresented: tagDeleteDialogBinding,
+            titleVisibility: .visible
+        ) {
+            Button("Delete Tag", role: .destructive) {
+                if let tagToDelete {
+                    appModel.deleteTag(tagToDelete.key)
+                }
+                self.tagToDelete = nil
+            }
+            Button("Cancel", role: .cancel) { tagToDelete = nil }
+        } message: {
+            Text("This removes the tag from every matching note. Nested tags are included.")
+        }
+    }
+
+    private var tagRenameAlertBinding: Binding<Bool> {
+        Binding(
+            get: { tagToRename != nil },
+            set: { if !$0 { tagToRename = nil } }
+        )
+    }
+
+    private var tagDeleteDialogBinding: Binding<Bool> {
+        Binding(
+            get: { tagToDelete != nil },
+            set: { if !$0 { tagToDelete = nil } }
+        )
     }
 
     /// A fixed row with its count badge.
@@ -191,6 +233,20 @@ struct SidebarView: View {
             Button("Copy Tag") {
                 NSPasteboard.general.clearContents()
                 NSPasteboard.general.setString("#\(node.displayPath)", forType: .string)
+            }
+            Divider()
+            Button("Rename Tag…") {
+                tagRenameText = node.displayPath
+                tagToRename = node
+            }
+            Button("Delete Tag", role: .destructive) {
+                tagToDelete = node
+            }
+            if appModel.tagRewriteUndoAvailable {
+                Divider()
+                Button("Undo Last Tag Rewrite") {
+                    appModel.undoLastTagRewrite()
+                }
             }
         }
     }
@@ -323,9 +379,17 @@ struct NoteListView: View {
     @ViewBuilder
     private func contextMenu(for record: FileRecord) -> some View {
         if noteList.selection == .trash {
-            Button("Restore") { /* Gate 4 */ }
-                .disabled(true)
+            Button("Restore") {
+                appModel.actions.restoreFromTrash([record])
+            }
             Button("Delete Permanently", role: .destructive) {
+                appModel.actions.deletePermanently([record])
+            }
+        } else if noteList.selection == .archive {
+            Button("Unarchive") {
+                appModel.actions.unarchive([record])
+            }
+            Button("Move to Trash", role: .destructive) {
                 appModel.actions.moveToTrash([record])
             }
         } else {
@@ -337,9 +401,15 @@ struct NoteListView: View {
             }
             Divider()
             Button("Move to…") { isMovePresented = true }
+            Button("Archive") { appModel.actions.archive([record]) }
             Button("Rename…") {
                 renameText = record.name
                 recordToRename = record
+            }
+            if !record.titleIsManaged {
+                Button("Match Filename to First Line") {
+                    appModel.actions.useTitleAsFilename(record)
+                }
             }
             Button("Duplicate") { appModel.actions.duplicate(record) }
             Divider()
@@ -605,9 +675,18 @@ extension DocumentAreaView {
         guard let root = appModel.libraryRoot?.url else { return nil }
         let noteDirectory = session.fileURL.deletingLastPathComponent()
         let model = appModel
+        let actualRelativePath = model.relativePath(of: session.fileURL) ?? ""
+        let noteDirectoryRelativePath: String = {
+            guard let original = NoteLifecycle.originalRelativePath(
+                ofArchivePath: actualRelativePath
+            ) else {
+                return model.relativePath(of: noteDirectory) ?? ""
+            }
+            return (original as NSString).deletingLastPathComponent
+        }()
         return PreviewContext(
             assetRoot: root,
-            noteDirectoryRelativePath: model.relativePath(of: noteDirectory) ?? "",
+            noteDirectoryRelativePath: noteDirectoryRelativePath,
             assetsDirectory: { root.appendingPathComponent("Assets", isDirectory: true) },
             allowRawHTML: model.allowRawHTML,
             openDocumentLink: { url in
