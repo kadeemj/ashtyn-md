@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-01
 **Branch:** `phase-7` (3 commits ahead of `main`, not merged)
-**State:** Gates 0–4 complete; Task 28 complete (28 of 32 tasks). Gate 5 is in progress.
+**State:** Gates 0–4 complete; Task 29 complete (29 of 32 tasks). Gate 5 is in progress.
 **Plan:** `/Users/kadeem/.claude/plans/lets-create-a-better-delegated-crayon.md`
 
 ## Goal
@@ -25,7 +25,7 @@ Four decisions were locked with the user before implementation:
 
 ## Current state
 
-**Tests: 464 passed, 5 skipped (469 total) in 49 suites in the unit target,
+**Tests: 482 passed, 5 skipped (487 total) in 52 suites in the unit target,
 all passing.** Baseline before Gate 4 was 435 unit tests in 41 suites; the
 original phase baseline was 167 in 23 suites.
 
@@ -37,7 +37,9 @@ xcodebuild -project AshtynMD.xcodeproj -scheme AshtynMD -configuration Debug tes
 The 10,000-file performance gate still passes at 3.30 s
 (`./script/performance_gate.sh`).
 
-**XCUITests: 22 passing**, including the Gate 5 Note Info inspector and wiki-link autocomplete flows.
+**XCUITests: 24 passing**, including the Gate 5 Note Info inspector, wiki-link
+autocomplete, search snippet, and Quick Open (including keyboard-navigation)
+flows.
 
 ### Commits
 
@@ -366,16 +368,54 @@ in-app `FuzzyMatch` ranking and has been deleted.)
   fixture-backed UI selection, create-note, and AI-suppression flows pass
   alongside the full suites. The existing Control-Space completion hook
   remains the ordinary offline completion path.
-- **Task 29** — `SearchSnippet` / `SearchQuery` / Quick Open (⇧⌘O; ⌘K is Link).
-  **Change the FTS snippet delimiters** to U+E000-range private-use scalars:
-  FTS5's `snippet()` does not escape its own markers, so a note containing a
-  literal `⟦` corrupts the parse. Then actually render the highlight —
-  `SearchColumnView.plainSnippet` currently strips it.
-- **Task 30** — export. Markdown = byte-exact `copyItem`. HTML/PDF/RTF need a
-  new `MarkdownPreviewPage.exportDocument(bodyHTML:title:)` sibling, because
-  `wrap` injects a `window.webkit.messageHandlers` script that is a JS error in
-  a standalone file. **DOCX starts with a probe test** (`PK\x03\x04` +
-  `word/document.xml`); if it throws, fall back to `.docFormat` and gate the
+- **Task 29 — complete, including the final-review fix wave.**
+  `SearchQuery.ftsMatchExpression(for:)` extracts the FTS5 match-expression
+  builder (quote each whitespace-separated term, escape embedded quotes,
+  append `*` for prefix search) out of `LibraryStore.search()` so it is
+  unit-testable without SQLite. `SearchSnippet` fixes a real delimiter
+  collision: the `snippet()` SQL call used to mark hits with literal `⟦`/`⟧`
+  characters, which FTS5's own `snippet()` does not escape, so a note
+  containing one of those characters corrupted the parse — the delimiters are
+  now U+E000/U+E001 private-use-area scalars, and `SearchSnippet.segments(from:)`
+  parses them into plain/highlighted runs that `SearchColumnView` renders as a
+  real bold `Text`, replacing the old `plainSnippet` helper that just stripped
+  both markers. `QuickOpenModel`/`QuickOpenView` (`Features/Library/QuickOpen.swift`)
+  add a fuzzy jump-to-note palette on ⇧⌘O, mirroring
+  `WikiLinkAutocompleteModel`'s debounce/cancellation shape (120 ms debounce,
+  per-request-ID guard) and reusing `LibraryStore.titleCandidates` +
+  `FuzzyMatch` with no new store methods; presentation is a `.sheet(item:)` on
+  `LibraryWindowView` routed through a new
+  `LibraryCommandRequests.Request.quickOpen` case.
+
+  The final whole-branch review caught four issues closed in the same fix
+  wave: (1) the sheet's content closure originally constructed
+  `QuickOpenModel` *inline* (commit `c833d30`), which SwiftUI re-invokes on
+  every re-render, discarding the model — and the user's typed query — on
+  nearly every keystroke; folding presence and content into one
+  `QuickOpenSheetItem` bound through `.sheet(item:)` (commit `315efc9`) means
+  the closure only ever reads an already-built model. (2) The empty-query
+  branch called `LibraryStore.recents(limit:)`, which does not filter
+  trashed/archived notes (so a trashed note could be offered and then fail to
+  open) and returns nothing on a library where no note has ever been opened;
+  it now calls `titleCandidates(limit:)`, matching what
+  `WikiLinkAutocompleteModel`'s own empty-query path actually calls (the
+  original design spec's claim of parity with that model had cited the wrong
+  method). (3) Quick Open's `.onKeyPress(.upArrow/.downArrow)` on a `VStack`
+  above a focused `TextField` was this codebase's first use of `.onKeyPress`
+  and had never been verified past a single-row click; a new UI test
+  (`testQuickOpenDownArrowMovesSelectionBeforeReturnOpens`) types a query
+  matching two fixture notes, presses Down Arrow then Return, and asserts the
+  *second* result opened — confirmed non-vacuous by a control run that
+  removed the Down Arrow press and watched the same assertions fail.
+  `.onKeyPress` works as written; no AppKit-level key interception was
+  needed. (4) `QuickOpenView` now shows a `ProgressView` during the ~120 ms
+  debounce window (mirroring `WikiLinkAutocompletePopoverView`), so the sheet
+  no longer collapses to its empty state and re-grows on every keystroke.
+- **Task 30 — next.** Export. Markdown = byte-exact `copyItem`. HTML/PDF/RTF
+  need a new `MarkdownPreviewPage.exportDocument(bodyHTML:title:)` sibling,
+  because `wrap` injects a `window.webkit.messageHandlers` script that is a JS
+  error in a standalone file. **DOCX starts with a probe test** (`PK\x03\x04`
+  + `word/document.xml`); if it throws, fall back to `.docFormat` and gate the
   menu item on `NoteExporter.isAvailable(.docx)`.
 
 ### Gate 6 — Coverage and docs (Tasks 31–32)
