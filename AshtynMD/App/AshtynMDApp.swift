@@ -297,6 +297,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         #if DEBUG
         if UITestLaunchConfiguration.current.isEnabled {
             Task { @MainActor [weak self] in
+                // AISettings persists to the real UserDefaults.standard
+                // across process launches, and -ui-test-reset only clears
+                // the fixture library, not defaults — so this is set
+                // unconditionally on every UI-test launch (not only inside
+                // an `if enablesAutomaticAI` guard) to avoid one test run
+                // leaking automatic completion into an unrelated later one.
+                AISettings.shared.automaticCompletionEnabled = UITestLaunchConfiguration.current.enablesAutomaticAI
+                if UITestLaunchConfiguration.current.enablesAutomaticAI {
+                    AISettings.shared.selectedProvider = .ollama
+                }
                 // XCTest can launch the process without asking SwiftUI to
                 // materialize its initial WindowGroup. Give the scene a few
                 // turns first, then provide the same root view in a regular

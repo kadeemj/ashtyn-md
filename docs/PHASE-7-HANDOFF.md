@@ -343,15 +343,27 @@ Store-side work is **already done** in Gate 2: `resolveWikiLink`, `backlinks`,
   300 ms debounce, and the panel resolves backlinks and outgoing wiki links
   through the existing actor-backed store APIs. Its focused unit and UI tests
   passed; the current suite counts are listed above.
-- **Task 28 — complete.** Wiki-link autocomplete is a separate AppKit/SwiftUI
-  popover driven from the editor's text-change and selection hooks. It detects
-  an unfinished `[[target` range, accepts spaces, debounces and cancels
-  actor-backed `titleSuggestions` lookups, and keeps stale results from
-  replacing a newer query. Up/Down, Return, Tab, and Escape are handled by the
-  editor responder, and accepting a result replaces only the target range in
-  one undoable edit. Focused unit coverage and the fixture-backed UI selection
-  flow pass alongside the full suites. The existing Control-Space completion
-  hook remains the ordinary offline completion path.
+- **Task 28 — complete, including the gap-closing follow-up.** Wiki-link
+  autocomplete is a separate AppKit/SwiftUI popover driven from the editor's
+  text-change and selection hooks. It detects an unfinished `[[target` range,
+  accepts spaces, debounces and cancels actor-backed lookups, and keeps stale
+  results from replacing a newer query. Up/Down, Return, Tab, and Escape are
+  handled by the editor responder, and accepting a result replaces only the
+  target range in one undoable edit. The four gaps between the original
+  implementation and `docs/superpowers/specs/2026-08-02-wiki-link-autocomplete-design.md`
+  identified after the initial ship were closed by
+  `docs/superpowers/plans/2026-08-02-wiki-link-autocomplete-gap-closing.md`
+  (6 tasks, all complete): fuzzy matching with highlight ranges via
+  `FuzzyMatch` over a new `LibraryStore.titleCandidates` pool (replacing the
+  old SQL prefix filter), a synthetic "Create note" row when a non-empty
+  query has zero matches, tag/date metadata rendered per suggestion row,
+  recent notes shown on an empty `[[` query, and full automatic-AI-ghost-text
+  suppression while the popover is active (a one-line `isEligible` guard in
+  `EditorTextView.Coordinator.textDidChange` checking
+  `WikiLinkAutocompleteModel.isActive`). Focused unit coverage and the
+  fixture-backed UI selection, create-note, and AI-suppression flows pass
+  alongside the full suites. The existing Control-Space completion hook
+  remains the ordinary offline completion path.
 - **Task 29** — `SearchSnippet` / `SearchQuery` / Quick Open (⇧⌘O; ⌘K is Link).
   **Change the FTS snippet delimiters** to U+E000-range private-use scalars:
   FTS5's `snippet()` does not escape its own markers, so a note containing a

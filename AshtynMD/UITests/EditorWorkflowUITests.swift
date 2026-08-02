@@ -110,6 +110,40 @@ final class EditorWorkflowUITests: UITestCase {
         XCTAssertTrue(file(named: "Brand New Note").waitForExistence(timeout: 10))
     }
 
+    func testWikiLinkPopoverSuppressesAutomaticAIGhostText() {
+        launch(automaticAI: true)
+        let editor = openFixtureNote()
+        editor.click()
+        editor.typeKey(.end, modifierFlags: [.command])
+        editor.typeKey(.enter, modifierFlags: [])
+        editor.typeKey(.enter, modifierFlags: [])
+        editor.typeText("[[Week")
+
+        let suggestion = element(AccessibilityID.wikiLinkSuggestion(0))
+        XCTAssertTrue(suggestion.waitForExistence(timeout: 5), suggestion.debugDescription)
+
+        // The automatic trigger fires after 800ms of inactivity; give it a
+        // full second while the popover is still open and confirm it never
+        // arms.
+        let ghostTextAppeared = XCTNSPredicateExpectation(
+            predicate: NSPredicate(
+                format: "label == %@",
+                "Document editor, AI suggestion: fixtureSuggestion"
+            ),
+            object: editor
+        )
+        XCTAssertEqual(XCTWaiter.wait(for: [ghostTextAppeared], timeout: 1), .timedOut)
+
+        // Dismiss the popover, then make a fresh edit — only a new edit re-arms
+        // the automatic trigger's one-shot 800ms timer — and confirm ghost text
+        // can appear once the popover is gone.
+        editor.typeKey(.escape, modifierFlags: [])
+        editor.typeKey(.rightArrow, modifierFlags: [])
+        editor.typeKey(.rightArrow, modifierFlags: [])
+        editor.typeText(" ")
+        waitForGhostText(in: editor)
+    }
+
     func testStandaloneDocumentLaunch() {
         launch(standalone: true)
         XCTAssertTrue(

@@ -7,6 +7,7 @@ struct UITestLaunchConfiguration {
     let resetsLibrary: Bool
     let showsOnboarding: Bool
     let opensStandalone: Bool
+    let enablesAutomaticAI: Bool
 
     private static let root = FileManager.default.temporaryDirectory
         .appendingPathComponent("AshtynMD-UITests", isDirectory: true)
@@ -18,7 +19,8 @@ struct UITestLaunchConfiguration {
             isEnabled: arguments.contains("-ui-testing"),
             resetsLibrary: arguments.contains("-ui-test-reset"),
             showsOnboarding: arguments.contains("-ui-test-show-onboarding"),
-            opensStandalone: arguments.contains("-ui-test-standalone")
+            opensStandalone: arguments.contains("-ui-test-standalone"),
+            enablesAutomaticAI: arguments.contains("-ui-test-automatic-ai")
         )
     }
 

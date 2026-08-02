@@ -12,7 +12,8 @@ class UITestCase: XCTestCase {
     func launch(
         reset: Bool = true,
         onboarding: Bool = false,
-        standalone: Bool = false
+        standalone: Bool = false,
+        automaticAI: Bool = false
     ) {
         app = XCUIApplication()
         // A previous macOS run can persist a closed main WindowGroup. UI
@@ -26,6 +27,7 @@ class UITestCase: XCTestCase {
         if reset { app.launchArguments.append("-ui-test-reset") }
         if onboarding { app.launchArguments.append("-ui-test-show-onboarding") }
         if standalone { app.launchArguments.append("-ui-test-standalone") }
+        if automaticAI { app.launchArguments.append("-ui-test-automatic-ai") }
         app.launch()
         app.activate()
     }
