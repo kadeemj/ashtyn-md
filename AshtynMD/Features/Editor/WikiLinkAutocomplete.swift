@@ -117,8 +117,18 @@ final class WikiLinkAutocompleteModel {
     var onChange: (() -> Void)?
 
     var isActive: Bool {
+        context != nil
+    }
+
+    /// True once a non-empty query has settled with zero matches — the
+    /// popover then offers a synthetic "Create note" row as the only slot.
+    var showsCreateNoteRow: Bool {
         guard let context else { return false }
-        return !context.query.isEmpty
+        return !isLoading && !context.query.isEmpty && suggestions.isEmpty
+    }
+
+    private var slotCount: Int {
+        suggestions.count + (showsCreateNoteRow ? 1 : 0)
     }
 
     init(
@@ -182,8 +192,7 @@ final class WikiLinkAutocompleteModel {
               let next = WikiLinkAutocompleteContext.detect(
                 in: text,
                 caretLocation: selection.location
-              ),
-              !next.query.isEmpty else {
+              ) else {
             cancel()
             return
         }
@@ -238,34 +247,26 @@ final class WikiLinkAutocompleteModel {
     }
 
     func moveSelection(by offset: Int) {
-        guard !suggestions.isEmpty else { return }
-        let count = suggestions.count
-        selectedIndex = (selectedIndex + offset).modulo(count)
+        guard slotCount > 0 else { return }
+        selectedIndex = (selectedIndex + offset).modulo(slotCount)
         onChange?()
     }
 
-    func selectedInsertion() -> WikiLinkAutocompleteInsertion? {
-        guard let context, let suggestion = suggestions[safe: selectedIndex] else { return nil }
-        let title = suggestion.record.title.isEmpty ? suggestion.record.name : suggestion.record.title
-        guard !title.isEmpty else { return nil }
-        return WikiLinkAutocompleteInsertion(range: context.targetRange, replacement: title)
-    }
-
-    // NOTE (Task 2 deviation, flagged for review): the brief's own Step 1
-    // test calls `model.selectedAction()` and expects a
-    // `WikiLinkAutocompleteAction?` (with `.insertion`/`.noteToCreate`), but
-    // Step 3's instructions explicitly leave `selectedInsertion()` un-renamed
-    // this task ("Task 3 renames selectedInsertion() to selectedAction()
-    // project-wide in one place"). Literally following Step 3 alone leaves
-    // the mandated test file uncompilable. This thin shim is the minimal,
-    // additive bridge: it changes no existing behavior and is superseded
-    // wholesale by Task 3's own replacement of `selectedInsertion()` with a
-    // real `selectedAction()` (see the master plan's Task 3 Step 3) — that
-    // step's author should remove this shim as part of that replacement to
-    // avoid a duplicate-declaration conflict.
     func selectedAction() -> WikiLinkAutocompleteAction? {
-        guard let insertion = selectedInsertion() else { return nil }
-        return WikiLinkAutocompleteAction(insertion: insertion, noteToCreate: nil)
+        guard let context else { return nil }
+        if let suggestion = suggestions[safe: selectedIndex] {
+            let title = suggestion.record.title.isEmpty ? suggestion.record.name : suggestion.record.title
+            guard !title.isEmpty else { return nil }
+            return WikiLinkAutocompleteAction(
+                insertion: WikiLinkAutocompleteInsertion(range: context.targetRange, replacement: title),
+                noteToCreate: nil
+            )
+        }
+        guard showsCreateNoteRow, selectedIndex == suggestions.count else { return nil }
+        return WikiLinkAutocompleteAction(
+            insertion: WikiLinkAutocompleteInsertion(range: context.targetRange, replacement: context.query),
+            noteToCreate: context.query
+        )
     }
 }
 
@@ -392,7 +393,19 @@ final class WikiLinkAutocompleteController: NSObject, NSPopoverDelegate {
     }
 
     func acceptSelection() -> Bool {
-        guard let insertion = model.selectedInsertion(), let textView else { return false }
+        // NOTE (Task 3 deviation, flagged for review): `selectedInsertion()`
+        // was removed as part of this task's Step 3 replacement (nothing else
+        // called it once the shim `selectedAction()` from Task 2 was
+        // replaced), but this call site — outside this task's brief, which
+        // only touches `WikiLinkAutocompleteModel` — still referenced it and
+        // would not compile otherwise. Mechanically switched to
+        // `selectedAction()` and unwrapped `.insertion` to preserve exactly
+        // the prior insertion behavior. The create-note side effect
+        // (`action.noteToCreate`) is intentionally left unused here — wiring
+        // it up is Task 5's job per this task's own Interfaces section
+        // ("Consumed by ... Task 5 (controller/create-note action)").
+        guard let action = model.selectedAction(), let textView else { return false }
+        let insertion = action.insertion
         dismiss()
         guard textView.applyExternalEdit(
             range: insertion.range,

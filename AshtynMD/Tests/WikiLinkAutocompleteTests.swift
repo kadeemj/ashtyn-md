@@ -112,6 +112,31 @@ struct WikiLinkAutocompleteModelTests {
         #expect(action?.noteToCreate == nil)
     }
 
+    @Test("empty results offer a create-note action instead of a stale selection")
+    func emptyResultsOfferCreateNote() async {
+        let model = WikiLinkAutocompleteModel(
+            store: nil,
+            debounce: .milliseconds(10),
+            suggestionProvider: { _, _ in [] }
+        )
+        let text = "[[Missing Note"
+        model.update(
+            text: text,
+            selection: NSRange(location: (text as NSString).length, length: 0),
+            isMarkdown: true
+        )
+        await settle()
+
+        #expect(model.isActive)
+        #expect(!model.isLoading)
+        #expect(model.suggestions.isEmpty)
+        #expect(model.showsCreateNoteRow)
+        let action = model.selectedAction()
+        #expect(action?.insertion.range == NSRange(location: 2, length: 12))
+        #expect(action?.insertion.replacement == "Missing Note")
+        #expect(action?.noteToCreate == "Missing Note")
+    }
+
     @Test("standalone documents do not query without a library store")
     func unavailableWithoutStore() {
         let model = WikiLinkAutocompleteModel(store: nil, debounce: .milliseconds(0))
@@ -271,5 +296,47 @@ struct WikiLinkAutocompleteModelTests {
 
         try await store.close()
         try FileManager.default.removeItem(at: directory)
+    }
+
+    @Test("an empty query after [[ shows recent notes instead of nothing")
+    func emptyQueryShowsRecents() async {
+        let recent = suggestion("Recent Note")
+        let model = WikiLinkAutocompleteModel(
+            store: nil,
+            debounce: .milliseconds(10),
+            suggestionProvider: { query, _ in query.isEmpty ? [recent] : [] }
+        )
+        model.update(
+            text: "[[",
+            selection: NSRange(location: 2, length: 0),
+            isMarkdown: true
+        )
+        await settle()
+
+        #expect(model.isActive)
+        #expect(model.suggestions.map(\.record.title) == ["Recent Note"])
+        #expect(!model.showsCreateNoteRow)
+    }
+
+    @Test("selection navigation wraps through the create-note slot")
+    func keyboardNavigationIncludesCreateNoteSlot() async {
+        let model = WikiLinkAutocompleteModel(
+            store: nil,
+            debounce: .milliseconds(0),
+            suggestionProvider: { _, _ in [] }
+        )
+        model.update(
+            text: "[[No Match Yet",
+            selection: NSRange(location: 14, length: 0),
+            isMarkdown: true
+        )
+        await settle()
+
+        // Zero real suggestions, so the create-note row is the only slot;
+        // wrapping by one in either direction lands back on it.
+        #expect(model.selectedIndex == 0)
+        model.moveSelection(by: 1)
+        #expect(model.selectedIndex == 0)
+        #expect(model.selectedAction()?.noteToCreate == "No Match Yet")
     }
 }
