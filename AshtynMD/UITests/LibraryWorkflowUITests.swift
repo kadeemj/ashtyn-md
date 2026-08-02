@@ -109,6 +109,24 @@ final class LibraryWorkflowUITests: UITestCase {
         XCTAssertTrue(file(named: "Fixture Note").waitForExistence(timeout: 10))
     }
 
+    func testQuickOpenJumpsToNoteByFuzzyTitle() {
+        launch()
+        chooseSidebarItem("Notes")
+        XCTAssertTrue(file(named: "Fixture Note").waitForExistence(timeout: 10))
+
+        app.typeKey("o", modifierFlags: [.command, .shift])
+        let field = element(AccessibilityID.quickOpenField)
+        XCTAssertTrue(field.waitForExistence(timeout: 10))
+        field.typeText("fixtnote")
+
+        let result = element(AccessibilityID.quickOpenResult(0))
+        XCTAssertTrue(result.waitForExistence(timeout: 10))
+        result.click()
+
+        let editor = element(AccessibilityID.editor)
+        XCTAssertTrue(editor.waitForExistence(timeout: 10))
+    }
+
     func testTagAppearsInSidebarAndFiltersNotes() {
         launch()
         // Tagged Note.md carries #work/alpha, so both the parent and the child
