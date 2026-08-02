@@ -238,6 +238,40 @@ struct TagHierarchyTests {
         }
     }
 
+    @Test("title candidates return every titled note regardless of query")
+    func titleCandidatesReturnsAllTitledNotes() async throws {
+        try await withStore { store in
+            try await add(store, "a.md", "Weekly Review\n\nbody")
+            try await add(store, "b.md", "Groceries\n\nbody")
+            try await add(store, "untitled.md", "")
+
+            let candidates = try await store.titleCandidates(limit: 10)
+            #expect(candidates.map(\.title).sorted() == ["Groceries", "Weekly Review"])
+        }
+    }
+
+    @Test("title candidates respect the limit and recency order")
+    func titleCandidatesRespectsLimitAndOrder() async throws {
+        try await withStore { store in
+            try await add(store, "old.md", "Old Note\n\nbody", modified: 1_700_000_000)
+            try await add(store, "new.md", "New Note\n\nbody", modified: 1_700_000_100)
+
+            let candidates = try await store.titleCandidates(limit: 1)
+            #expect(candidates.map(\.title) == ["New Note"])
+        }
+    }
+
+    @Test("primary tag is the lexicographically-first direct tag")
+    func primaryTagIsLexicographicallyFirst() async throws {
+        try await withStore { store in
+            let fileID = try await add(store, "a.md", "Tagged\n\n#reading #work/alpha")
+            let untaggedID = try await add(store, "b.md", "Untagged\n\nno tags")
+
+            #expect(try await store.primaryTag(forFileID: fileID) == "reading")
+            #expect(try await store.primaryTag(forFileID: untaggedID) == nil)
+        }
+    }
+
     // MARK: - Counts and sorting
 
     @Test("the sidebar counts come from one query")

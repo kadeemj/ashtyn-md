@@ -981,6 +981,36 @@ actor LibraryStore {
         )
     }
 
+    /// A broad, recency-ordered candidate pool for in-app fuzzy ranking.
+    /// Deliberately unfiltered by the query itself: `FuzzyMatch` matches
+    /// non-contiguous subsequences, so filtering candidates by the raw
+    /// query in SQL first would silently exclude valid matches (the exact
+    /// "Wireframes" vs. "Work Retrospective" problem it exists to fix).
+    func titleCandidates(limit: Int = 500) throws -> [FileRecord] {
+        try database.query("""
+            SELECT \(Self.recordColumns) FROM files
+            WHERE trashed_at IS NULL AND title != ''
+            ORDER BY mtime DESC LIMIT ?
+            """,
+            [.integer(Int64(limit))],
+            transform: Self.makeRecord
+        )
+    }
+
+    /// The tag shown alongside a note title in the wiki-link popover: the
+    /// lexicographically-first direct tag, or nil if the note has none.
+    func primaryTag(forFileID fileID: Int64) throws -> String? {
+        try database.query("""
+            SELECT t.path FROM file_tags ft
+            JOIN tags t ON t.id = ft.tag_id
+            WHERE ft.file_id = ? AND ft.is_direct = 1
+            ORDER BY t.path ASC LIMIT 1
+            """,
+            [.integer(fileID)],
+            transform: { $0.text(0) }
+        ).first
+    }
+
     // MARK: - Search
 
     /// Full-text search over titles, relative paths, and content.
