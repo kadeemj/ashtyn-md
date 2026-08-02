@@ -71,16 +71,38 @@ struct WikiLinkAutocompleteInsertion: Equatable {
     }
 }
 
+/// One ranked candidate in the popover: the underlying note, the character
+/// ranges `FuzzyMatch` matched (for bolding), and its primary tag for the
+/// secondary metadata line.
+struct WikiLinkSuggestion: Equatable, Identifiable {
+    let record: FileRecord
+    let matchedRanges: [NSRange]
+    let primaryTag: String?
+    var id: Int64 { record.id }
+}
+
+/// What accepting the current selection does: always an insertion, plus a
+/// note title to create on disk when the selection was the synthetic
+/// "Create note" row.
+struct WikiLinkAutocompleteAction: Equatable {
+    let insertion: WikiLinkAutocompleteInsertion
+    let noteToCreate: String?
+}
+
 /// Main-actor state machine for wiki-link suggestions. The lookup is injected
 /// so trigger/range behavior and stale-result cancellation stay unit-testable
 /// without opening a SQLite-backed library.
 @MainActor
 @Observable
 final class WikiLinkAutocompleteModel {
-    typealias SuggestionProvider = @MainActor (String, Int) async -> [FileRecord]
+    typealias SuggestionProvider = @MainActor (String, Int) async -> [WikiLinkSuggestion]
 
     static let debounce: Duration = .milliseconds(120)
     static let suggestionLimit = 20
+    /// How many recency-ordered candidates the default provider fuzzy-ranks
+    /// per lookup. `FuzzyMatch` is a DP matcher meant for "a few hundred
+    /// short titles" (see its own doc comment), not a whole library.
+    private static let candidatePoolSize = 500
 
     private let suggestionProvider: SuggestionProvider
     private let debounceDuration: Duration
@@ -89,7 +111,7 @@ final class WikiLinkAutocompleteModel {
     private var requestID = 0
 
     private(set) var context: WikiLinkAutocompleteContext?
-    private(set) var suggestions: [FileRecord] = []
+    private(set) var suggestions: [WikiLinkSuggestion] = []
     private(set) var selectedIndex = 0
     private(set) var isLoading = false
     var onChange: (() -> Void)?
@@ -108,13 +130,49 @@ final class WikiLinkAutocompleteModel {
             self.suggestionProvider = suggestionProvider
             isAvailable = true
         } else {
-            self.suggestionProvider = { prefix, limit in
+            self.suggestionProvider = { query, limit in
                 guard let store else { return [] }
-                return (try? await store.titleSuggestions(prefix: prefix, limit: limit)) ?? []
+                guard !query.isEmpty else {
+                    let recents = (try? await store.titleCandidates(limit: limit)) ?? []
+                    return await Self.makeSuggestions(from: recents, store: store)
+                }
+                let candidates = (try? await store.titleCandidates(limit: Self.candidatePoolSize)) ?? []
+                let ranked = candidates
+                    .compactMap { record -> (record: FileRecord, score: FuzzyMatch.Score)? in
+                        FuzzyMatch.score(pattern: query, in: record.title).map { (record, $0) }
+                    }
+                    .sorted { $0.score.value > $1.score.value }
+                    .prefix(limit)
+                let ranges = Dictionary(uniqueKeysWithValues: ranked.map { ($0.record.id, $0.score.ranges) })
+                return await Self.makeSuggestions(
+                    from: ranked.map(\.record),
+                    matchedRanges: ranges,
+                    store: store
+                )
             }
             isAvailable = store != nil
         }
         self.debounceDuration = debounce
+    }
+
+    private static func makeSuggestions(
+        from records: [FileRecord],
+        matchedRanges: [Int64: [NSRange]] = [:],
+        store: LibraryStore
+    ) async -> [WikiLinkSuggestion] {
+        var suggestions: [WikiLinkSuggestion] = []
+        suggestions.reserveCapacity(records.count)
+        for record in records {
+            let tag = (try? await store.primaryTag(forFileID: record.id)) ?? nil
+            suggestions.append(
+                WikiLinkSuggestion(
+                    record: record,
+                    matchedRanges: matchedRanges[record.id] ?? [],
+                    primaryTag: tag
+                )
+            )
+        }
+        return suggestions
     }
 
     func update(text: String, selection: NSRange, isMarkdown: Bool) {
@@ -187,10 +245,27 @@ final class WikiLinkAutocompleteModel {
     }
 
     func selectedInsertion() -> WikiLinkAutocompleteInsertion? {
-        guard let context, let record = suggestions[safe: selectedIndex] else { return nil }
-        let title = record.title.isEmpty ? record.name : record.title
+        guard let context, let suggestion = suggestions[safe: selectedIndex] else { return nil }
+        let title = suggestion.record.title.isEmpty ? suggestion.record.name : suggestion.record.title
         guard !title.isEmpty else { return nil }
         return WikiLinkAutocompleteInsertion(range: context.targetRange, replacement: title)
+    }
+
+    // NOTE (Task 2 deviation, flagged for review): the brief's own Step 1
+    // test calls `model.selectedAction()` and expects a
+    // `WikiLinkAutocompleteAction?` (with `.insertion`/`.noteToCreate`), but
+    // Step 3's instructions explicitly leave `selectedInsertion()` un-renamed
+    // this task ("Task 3 renames selectedInsertion() to selectedAction()
+    // project-wide in one place"). Literally following Step 3 alone leaves
+    // the mandated test file uncompilable. This thin shim is the minimal,
+    // additive bridge: it changes no existing behavior and is superseded
+    // wholesale by Task 3's own replacement of `selectedInsertion()` with a
+    // real `selectedAction()` (see the master plan's Task 3 Step 3) — that
+    // step's author should remove this shim as part of that replacement to
+    // avoid a duplicate-declaration conflict.
+    func selectedAction() -> WikiLinkAutocompleteAction? {
+        guard let insertion = selectedInsertion() else { return nil }
+        return WikiLinkAutocompleteAction(insertion: insertion, noteToCreate: nil)
     }
 }
 
@@ -229,7 +304,8 @@ private struct WikiLinkAutocompletePopoverView: View {
                     .padding(.horizontal, 10)
                     .padding(.vertical, 9)
             } else {
-                ForEach(Array(model.suggestions.enumerated()), id: \.element.id) { index, record in
+                ForEach(Array(model.suggestions.enumerated()), id: \.element.id) { index, suggestion in
+                    let record = suggestion.record
                     Button {
                         onSelect()
                     } label: {
