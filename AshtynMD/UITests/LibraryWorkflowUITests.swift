@@ -127,6 +127,42 @@ final class LibraryWorkflowUITests: UITestCase {
         XCTAssertTrue(editor.waitForExistence(timeout: 10))
     }
 
+    /// Proves Quick Open's `.onKeyPress`-driven keyboard navigation actually
+    /// moves the selection, not just that Return opens *a* result. "note"
+    /// fuzzy-matches exactly two fixture notes — "Fixture Note" and
+    /// "Captured Note" — and `FuzzyMatch`'s leading-offset and length
+    /// penalties deterministically rank "Fixture Note" first (its "Note"
+    /// match starts one scalar earlier in a title that is also one scalar
+    /// shorter), so the ranking asserted below is fixed by the scoring
+    /// math, not incidental fixture ordering.
+    func testQuickOpenDownArrowMovesSelectionBeforeReturnOpens() {
+        launch()
+        chooseSidebarItem("Notes")
+        XCTAssertTrue(file(named: "Fixture Note").waitForExistence(timeout: 10))
+
+        app.typeKey("o", modifierFlags: [.command, .shift])
+        let field = element(AccessibilityID.quickOpenField)
+        XCTAssertTrue(field.waitForExistence(timeout: 10))
+        field.typeText("note")
+
+        let first = element(AccessibilityID.quickOpenResult(0))
+        let second = element(AccessibilityID.quickOpenResult(1))
+        XCTAssertTrue(second.waitForExistence(timeout: 10))
+        XCTAssertEqual(first.label, "Fixture Note")
+        XCTAssertEqual(second.label, "Captured Note")
+
+        // If Down Arrow were a no-op, Return would activate row 0 (Fixture
+        // Note) instead — the content assertion below would then fail.
+        field.typeKey(.downArrow, modifierFlags: [])
+        field.typeKey(.return, modifierFlags: [])
+
+        let editor = element(AccessibilityID.editor)
+        XCTAssertTrue(editor.waitForExistence(timeout: 10))
+        let body = text(in: editor)
+        XCTAssertTrue(body.contains("straight into the inbox"), body)
+        XCTAssertFalse(body.contains("Searchable alpha content"), body)
+    }
+
     func testTagAppearsInSidebarAndFiltersNotes() {
         launch()
         // Tagged Note.md carries #work/alpha, so both the parent and the child
