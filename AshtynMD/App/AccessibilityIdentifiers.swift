@@ -31,4 +31,12 @@ enum AccessibilityID {
         "\(wikiLinkSuggestionPrefix).\(index)"
     }
     static let wikiLinkCreateNote = "document.wiki-link-create-note"
+
+    static let quickOpen = "library.quick-open"
+    static let quickOpenField = "library.quick-open-field"
+    static let quickOpenResultPrefix = "library.quick-open-result"
+
+    static func quickOpenResult(_ index: Int) -> String {
+        "\(quickOpenResultPrefix).\(index)"
+    }
 }

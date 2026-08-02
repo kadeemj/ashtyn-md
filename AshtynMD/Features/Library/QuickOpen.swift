@@ -151,3 +151,122 @@ private extension Int {
         return result >= 0 ? result : result + divisor
     }
 }
+
+/// SwiftUI content for the Quick Open sheet: a text field plus a ranked,
+/// keyboard-navigable list of notes by fuzzy title match.
+struct QuickOpenView: View {
+    let model: QuickOpenModel
+    let onSelect: (FileRecord) -> Void
+
+    @Environment(\.dismiss) private var dismiss
+    @FocusState private var isFieldFocused: Bool
+
+    var body: some View {
+        @Bindable var model = model
+        VStack(alignment: .leading, spacing: 0) {
+            TextField("Jump to a note…", text: $model.query)
+                .textFieldStyle(.plain)
+                .font(.title3)
+                .padding(12)
+                .focused($isFieldFocused)
+                .onSubmit(selectCurrent)
+                .accessibilityIdentifier(AccessibilityID.quickOpenField)
+            Divider()
+            if model.results.isEmpty && !model.isLoading {
+                Text(model.query.isEmpty ? "No recent notes" : "No matching notes")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .padding(12)
+            } else {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 0) {
+                        ForEach(Array(model.results.enumerated()), id: \.element.id) { index, result in
+                            row(result, isSelected: index == model.selectedIndex, index: index)
+                        }
+                    }
+                }
+                .frame(maxHeight: 320)
+            }
+        }
+        .frame(width: 480)
+        .onAppear { isFieldFocused = true }
+        .onKeyPress(.upArrow) {
+            model.moveSelection(by: -1)
+            return .handled
+        }
+        .onKeyPress(.downArrow) {
+            model.moveSelection(by: 1)
+            return .handled
+        }
+        .onKeyPress(.escape) {
+            dismiss()
+            return .handled
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier(AccessibilityID.quickOpen)
+    }
+
+    private func selectCurrent() {
+        guard let record = model.selectedRecord() else { return }
+        onSelect(record)
+        dismiss()
+    }
+
+    private func row(_ result: QuickOpenResult, isSelected: Bool, index: Int) -> some View {
+        Button {
+            onSelect(result.record)
+            dismiss()
+        } label: {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(highlightedTitle(result)).lineLimit(1)
+                Text(subtitle(for: result))
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(
+                isSelected ? Color.accentColor.opacity(0.16) : Color.clear,
+                in: RoundedRectangle(cornerRadius: 5)
+            )
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier(AccessibilityID.quickOpenResult(index))
+        .accessibilityLabel(displayTitle(result.record))
+    }
+
+    private func displayTitle(_ record: FileRecord) -> String {
+        record.title.isEmpty ? record.name : record.title
+    }
+
+    private func subtitle(for result: QuickOpenResult) -> String {
+        let tag = result.primaryTag.map { "#\($0)" } ?? "Untagged"
+        let date = result.record.modifiedAt.formatted(.relative(presentation: .named))
+        return "\(tag) · edited \(date)"
+    }
+
+    private func highlightedTitle(_ result: QuickOpenResult) -> AttributedString {
+        let title = displayTitle(result.record)
+        let attributed = NSMutableAttributedString(string: title)
+        let fullLength = (title as NSString).length
+        for range in result.matchedRanges {
+            let bounded = NSRange(
+                location: max(0, min(range.location, fullLength)),
+                length: range.length
+            )
+            let clamped = NSRange(
+                location: bounded.location,
+                length: min(bounded.length, fullLength - bounded.location)
+            )
+            guard clamped.length > 0 else { continue }
+            attributed.addAttribute(
+                .font,
+                value: NSFont.boldSystemFont(ofSize: NSFont.systemFontSize),
+                range: clamped
+            )
+        }
+        return AttributedString(attributed)
+    }
+}
