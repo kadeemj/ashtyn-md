@@ -1001,15 +1001,7 @@ actor LibraryStore {
 
     /// Full-text search over titles, relative paths, and content.
     func search(_ rawQuery: String, limit: Int = 100) throws -> [SearchResult] {
-        let trimmed = rawQuery.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return [] }
-        // Quote each term to keep FTS5 operators from leaking in, then use
-        // prefix matching on the final term for search-as-you-type.
-        let terms = trimmed.split(separator: " ").map { term in
-            "\"\(term.replacingOccurrences(of: "\"", with: "\"\""))\""
-        }
-        var ftsQuery = terms.joined(separator: " ")
-        ftsQuery += "*"
+        guard let ftsQuery = SearchQuery.ftsMatchExpression(for: rawQuery) else { return [] }
 
         // Column 3 is `content` in the v2 FTS shape (title, name,
         // relative_path, content), and the snippet lands immediately after the
