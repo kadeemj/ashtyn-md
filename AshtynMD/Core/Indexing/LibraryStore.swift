@@ -967,20 +967,6 @@ actor LibraryStore {
         ) { (raw: $0.text(0), key: $0.text(1)) }
     }
 
-    /// Title matches for the wiki-link completion popover.
-    func titleSuggestions(prefix: String, limit: Int = 20) throws -> [FileRecord] {
-        let folded = MarkdownMetadata.foldTitle(prefix)
-        guard !folded.isEmpty else { return [] }
-        return try database.query("""
-            SELECT \(Self.recordColumns) FROM files
-            WHERE title_key LIKE ? AND trashed_at IS NULL AND title != ''
-            ORDER BY mtime DESC LIMIT ?
-            """,
-            [.text(folded + "%"), .integer(Int64(limit))],
-            transform: Self.makeRecord
-        )
-    }
-
     /// A broad, recency-ordered candidate pool for in-app fuzzy ranking.
     /// Deliberately unfiltered by the query itself: `FuzzyMatch` matches
     /// non-contiguous subsequences, so filtering candidates by the raw

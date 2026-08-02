@@ -9,8 +9,10 @@ struct WikiLinkAutocompleteContext: Equatable {
     let targetRange: NSRange
     let rawQuery: String
 
-    /// Whitespace is folded by `LibraryStore.titleSuggestions`; keeping the
-    /// raw value separately lets insertion replace exactly what the user typed.
+    /// The trimmed form used for ranking and for the create-note title;
+    /// `FuzzyMatch` additionally ignores whitespace inside the pattern, so
+    /// "wee rev" still matches "Weekly Review". Keeping the raw value
+    /// alongside it lets insertion replace exactly what the user typed.
     var query: String {
         rawQuery.trimmingCharacters(in: .whitespacesAndNewlines)
     }
@@ -406,6 +408,7 @@ final class WikiLinkAutocompleteController: NSObject, NSPopoverDelegate {
     private weak var textView: PlainTextView?
     private var popover: NSPopover?
     private var isDismissing = false
+    private let store: LibraryStore?
     private let noteDirectory: () -> URL?
     private let reindex: (() -> Void)?
     private let reportError: ((String) -> Void)?
@@ -418,6 +421,7 @@ final class WikiLinkAutocompleteController: NSObject, NSPopoverDelegate {
         reportError: ((String) -> Void)? = nil
     ) {
         model = WikiLinkAutocompleteModel(store: store)
+        self.store = store
         self.textView = textView
         self.noteDirectory = noteDirectory
         self.reindex = reindex
@@ -497,7 +501,34 @@ final class WikiLinkAutocompleteController: NSObject, NSPopoverDelegate {
         return content.substring(with: closerRange) == "]]"
     }
 
+    /// The duplicate check has to reach the actor-backed store, so creation
+    /// hops off the accept path. Captures self strongly on purpose: the user
+    /// asked for this note, and a controller torn down in the same run loop
+    /// must not silently swallow it.
     private func createNote(titled title: String) {
+        Task {
+            await self.createNoteIfMissing(titled: title)
+        }
+    }
+
+    /// Creates the note unless the library already has one with this exact
+    /// title. The create-note row only reflects the fuzzy-ranked candidate
+    /// pool, which `LibraryStore.titleCandidates` caps at 500 recency-ordered
+    /// notes — in a larger library an older note with this very title can sit
+    /// outside that window and still be offered for "creation". The inserted
+    /// `[[title]]` already resolves to it by title key, so the right move is
+    /// to write nothing at all rather than a colliding duplicate.
+    ///
+    /// Not private so controller tests can drive it without racing the
+    /// detached task `createNote(titled:)` spawns.
+    func createNoteIfMissing(titled title: String) async {
+        if let store {
+            let key = MarkdownMetadata.foldTitle(title)
+            // A lookup failure falls through to creating the note: the same
+            // outcome as before this guard existed.
+            let existing = (try? await store.resolveWikiLink(key)) ?? []
+            guard existing.isEmpty else { return }
+        }
         guard let folder = noteDirectory(),
               let baseName = TitleFilename.sanitizedBaseName(title) else { return }
         let url = LibraryBrowser.availableURL(in: folder, baseName: baseName, ext: "md")

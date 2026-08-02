@@ -226,18 +226,6 @@ struct TagHierarchyTests {
         }
     }
 
-    @Test("title suggestions match a prefix")
-    func titleSuggestions() async throws {
-        try await withStore { store in
-            try await add(store, "a.md", "Weekly Review\n\nbody")
-            try await add(store, "b.md", "Weekend Plans\n\nbody")
-            try await add(store, "c.md", "Groceries\n\nbody")
-
-            let suggestions = try await store.titleSuggestions(prefix: "week", limit: 10)
-            #expect(suggestions.map(\.title).sorted() == ["Weekend Plans", "Weekly Review"])
-        }
-    }
-
     @Test("title candidates return every titled note regardless of query")
     func titleCandidatesReturnsAllTitledNotes() async throws {
         try await withStore { store in
@@ -258,6 +246,27 @@ struct TagHierarchyTests {
 
             let candidates = try await store.titleCandidates(limit: 1)
             #expect(candidates.map(\.title) == ["New Note"])
+        }
+    }
+
+    @Test("wiki links resolve to titles the candidate window leaves out")
+    func resolveWikiLinkSeesPastTheCandidateWindow() async throws {
+        try await withStore { store in
+            try await add(store, "old.md", "Old Note\n\nbody", modified: 1_700_000_000)
+            try await add(store, "new.md", "New Note\n\nbody", modified: 1_700_000_100)
+
+            // The candidate pool is a bounded recency window (500 in
+            // production), so an older note can fall out of it entirely.
+            let candidates = try await store.titleCandidates(limit: 1)
+            #expect(!candidates.map(\.title).contains("Old Note"))
+
+            // resolveWikiLink is unbounded, which is what lets the wiki-link
+            // popover tell "no ranked match" apart from "no such note" before
+            // creating a duplicate.
+            let resolved = try await store.resolveWikiLink(
+                MarkdownMetadata.foldTitle("Old Note")
+            )
+            #expect(resolved.map(\.title) == ["Old Note"])
         }
     }
 

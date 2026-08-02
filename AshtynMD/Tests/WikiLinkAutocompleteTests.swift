@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import Testing
 
@@ -225,14 +226,10 @@ struct WikiLinkAutocompleteModelTests {
             store: nil,
             debounce: .milliseconds(0),
             suggestionProvider: { query, limit in
-                // NOTE (Task 2 deviation, flagged for review): the brief's
-                // given closure computed a score per candidate but never
-                // sorted by it, so `.first` was just array literal order
-                // (Wireframes first) regardless of score — the test could
-                // never have passed as written. Added the missing sort so
-                // this actually exercises the word-start-alignment ranking
-                // its own comment describes (confirmed against the existing,
-                // correctly-sorted `FuzzyMatchTests.ranking()`).
+                // The sort is what makes this test mean anything: without it
+                // `suggestions.first` would just be array-literal order
+                // (Wireframes) no matter what the scores were, and the
+                // assertion below would be checking nothing.
                 [wireframes, workRetro]
                     .compactMap { candidate -> (record: FileRecord, score: FuzzyMatch.Score)? in
                         FuzzyMatch.score(pattern: query, in: candidate.title).map { (candidate, $0) }
@@ -338,5 +335,154 @@ struct WikiLinkAutocompleteModelTests {
         model.moveSelection(by: 1)
         #expect(model.selectedIndex == 0)
         #expect(model.selectedAction()?.noteToCreate == "No Match Yet")
+    }
+}
+
+/// Controller-level behavior that needs a real NSTextView and a real store:
+/// bracket completion against PlainTextView's auto-pairing, and the
+/// duplicate-title guard on note creation.
+@Suite("Wiki-link autocomplete controller", .serialized)
+@MainActor
+struct WikiLinkAutocompleteControllerTests {
+    /// A notes folder plus a store indexing it, closed before the directory
+    /// is removed so teardown doesn't race SQLite's WAL files.
+    private func withLibrary(
+        _ body: (LibraryStore, URL) async throws -> Void
+    ) async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent(
+                "WikiLinkAutocompleteControllerTests-\(UUID().uuidString)",
+                isDirectory: true
+            )
+        let notes = directory.appendingPathComponent("Notes", isDirectory: true)
+        try FileManager.default.createDirectory(at: notes, withIntermediateDirectories: true)
+        let store = try LibraryStore(
+            databaseURL: directory.appendingPathComponent("library.sqlite")
+        )
+        do {
+            try await body(store, notes)
+            try await store.close()
+            try FileManager.default.removeItem(at: directory)
+        } catch {
+            try? await store.close()
+            try? FileManager.default.removeItem(at: directory)
+            throw error
+        }
+    }
+
+    private func index(_ store: LibraryStore, _ path: String, _ text: String) async throws {
+        var update = FileIndexUpdate(
+            relativePath: path,
+            size: Int64(text.utf8.count),
+            modifiedAt: Date(timeIntervalSince1970: 1_700_000_000),
+            languageID: .markdown,
+            content: text
+        )
+        update.parsed = MarkdownMetadata.parse(text)
+        _ = try await store.upsertFile(update)
+    }
+
+    private func makeEditor(_ text: String, caret: Int) -> PlainTextView {
+        let view = PlainTextView(frame: NSRect(x: 0, y: 0, width: 600, height: 400))
+        view.isRichText = false
+        view.languageDefinition = LanguageDefinition.definition(for: .markdown)
+        view.profile = EditorProfile.defaultProfile(for: .markdown)
+        view.string = text
+        view.setSelectedRange(NSRange(location: caret, length: 0))
+        return view
+    }
+
+    private func names(in folder: URL) throws -> [String] {
+        try FileManager.default
+            .contentsOfDirectory(atPath: folder.path)
+            .sorted()
+    }
+
+    /// Waits for the debounced lookup rather than sleeping a fixed budget,
+    /// so a slow machine doesn't turn into a flaky assertion.
+    private func settle(_ model: WikiLinkAutocompleteModel) async {
+        for _ in 0..<100 where model.isLoading {
+            try? await Task.sleep(for: .milliseconds(20))
+        }
+    }
+
+    @Test("]] is appended only when auto-pairing didn't already add it")
+    func closingBracketsAreAppendedOnlyWhenMissing() async throws {
+        try await withLibrary { store, notes in
+            try await index(store, "weekly-review.md", "Weekly Review\n\nbody")
+
+            // "[[" typed immediately before existing text: PlainTextView
+            // declines to auto-pair there, so nothing closes the link yet and
+            // accepting has to supply the "]]" itself.
+            let unpaired = makeEditor("tail text", caret: 0)
+            let unpairedController = WikiLinkAutocompleteController(
+                textView: unpaired,
+                store: store,
+                noteDirectory: { notes }
+            )
+            unpaired.insertText("[", replacementRange: unpaired.selectedRange())
+            unpaired.insertText("[", replacementRange: unpaired.selectedRange())
+            #expect(unpaired.string == "[[tail text")
+            unpaired.insertText("wr", replacementRange: unpaired.selectedRange())
+            #expect(unpaired.string == "[[wrtail text")
+
+            unpairedController.update()
+            await settle(unpairedController.model)
+            #expect(unpairedController.model.suggestions.map(\.record.title) == ["Weekly Review"])
+            #expect(unpairedController.acceptSelection())
+            #expect(unpaired.string == "[[Weekly Review]]tail text")
+            // Caret lands between the title and the closer either way.
+            #expect(unpaired.selectedRange() == NSRange(location: 15, length: 0))
+
+            // The already-covered branch, asserted alongside it so a
+            // regression in either direction shows up here: typing "[[" at
+            // the end of a line auto-pairs, and accepting must not double up.
+            let paired = makeEditor("See ", caret: 4)
+            let pairedController = WikiLinkAutocompleteController(
+                textView: paired,
+                store: store,
+                noteDirectory: { notes }
+            )
+            paired.insertText("[", replacementRange: paired.selectedRange())
+            paired.insertText("[", replacementRange: paired.selectedRange())
+            #expect(paired.string == "See [[]]")
+            paired.insertText("wr", replacementRange: paired.selectedRange())
+
+            pairedController.update()
+            await settle(pairedController.model)
+            #expect(pairedController.acceptSelection())
+            #expect(paired.string == "See [[Weekly Review]]")
+        }
+    }
+
+    @Test("creating a note skips a title the library already has")
+    func createNoteSkipsAnExistingTitle() async throws {
+        try await withLibrary { store, notes in
+            // Indexed *and* on disk: the note exists, it just wasn't in the
+            // fuzzy-ranked candidate window (capped at 500 by recency), so
+            // the popover offered to create it.
+            try await index(store, "weekly-review.md", "Weekly Review\n\nbody")
+            try Data("Weekly Review\n".utf8)
+                .write(to: notes.appendingPathComponent("weekly-review.md"))
+
+            var reindexCount = 0
+            let controller = WikiLinkAutocompleteController(
+                textView: makeEditor("", caret: 0),
+                store: store,
+                noteDirectory: { notes },
+                reindex: { reindexCount += 1 }
+            )
+
+            // Folded title keys ignore case and whitespace runs, so this is
+            // the same note.
+            await controller.createNoteIfMissing(titled: "weekly   review")
+            #expect(try names(in: notes) == ["weekly-review.md"])
+            #expect(reindexCount == 0)
+
+            // A genuinely new title still gets written.
+            await controller.createNoteIfMissing(titled: "Grocery List")
+            #expect(try names(in: notes) == ["Grocery List.md", "weekly-review.md"])
+            #expect(reindexCount == 1)
+        }
     }
 }

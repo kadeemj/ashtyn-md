@@ -25,9 +25,9 @@ Four decisions were locked with the user before implementation:
 
 ## Current state
 
-**Tests: 454 passed, 5 skipped (459 total) in the unit target, all passing.**
-Baseline before Gate 4 was 435 unit tests in 41 suites; the original phase
-baseline was 167 in 23 suites.
+**Tests: 464 passed, 5 skipped (469 total) in 49 suites in the unit target,
+all passing.** Baseline before Gate 4 was 435 unit tests in 41 suites; the
+original phase baseline was 167 in 23 suites.
 
 ```bash
 xcodegen generate
@@ -37,7 +37,7 @@ xcodebuild -project AshtynMD.xcodeproj -scheme AshtynMD -configuration Debug tes
 The 10,000-file performance gate still passes at 3.30 s
 (`./script/performance_gate.sh`).
 
-**XCUITests: 20 passing**, including the Gate 5 Note Info inspector and wiki-link autocomplete flows.
+**XCUITests: 22 passing**, including the Gate 5 Note Info inspector and wiki-link autocomplete flows.
 
 ### Commits
 
@@ -334,7 +334,9 @@ Undo is snapshot-based into
 ### Gate 5 — Links, search, export, info panel (Tasks 27–30) — **in progress**
 
 Store-side work is **already done** in Gate 2: `resolveWikiLink`, `backlinks`,
-`outgoingLinks`, `titleSuggestions` all exist and are tested.
+`outgoingLinks`, `titleCandidates` all exist and are tested. (The original
+`titleSuggestions` SQL prefix match was replaced by `titleCandidates` +
+in-app `FuzzyMatch` ranking and has been deleted.)
 
 - **Task 27 — complete.** Backlinks + note info panel are in a `.inspector`
   (macOS 14+), not a

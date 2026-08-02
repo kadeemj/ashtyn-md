@@ -47,7 +47,16 @@ enum FuzzyMatch {
             !CharacterSet.whitespaces.contains($0)
         }
         let candidateScalars = Array(candidate.unicodeScalars)
-        let haystack = Array(candidate.lowercased().unicodeScalars)
+        // Folded scalar-by-scalar rather than via `candidate.lowercased()`:
+        // full case folding *expands* a few scalars (U+0130 "İ" lowercases to
+        // "i" + U+0307), which would desync the folded array from
+        // `candidateScalars` and index the position/highlight arrays out of
+        // bounds. Expanding scalars keep their original form instead, which
+        // costs one rare folding nuance and buys guaranteed length parity.
+        let haystack: [Unicode.Scalar] = candidateScalars.map { scalar in
+            let lowered = String(scalar).lowercased().unicodeScalars
+            return lowered.count == 1 ? lowered.first! : scalar
+        }
 
         guard !needle.isEmpty else { return Score(value: 0, ranges: []) }
         guard needle.count <= haystack.count else { return nil }

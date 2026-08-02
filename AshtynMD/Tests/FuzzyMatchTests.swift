@@ -98,6 +98,31 @@ struct FuzzyMatchTests {
         #expect((candidate as NSString).substring(with: score.ranges[0]) == "Plan")
     }
 
+    @Test("a candidate whose lowercase form expands does not crash")
+    func caseExpandingScalars() {
+        // U+0130 "İ" lowercases to two scalars ("i" + U+0307), so folding the
+        // whole string at once used to leave the folded array one scalar
+        // longer than the original and trap indexing the parallel arrays.
+        let candidate = "İstanbul Trip"
+
+        // "İ" is left unfolded to keep the arrays the same length, so it no
+        // longer answers to a plain "i" — the deliberate tradeoff.
+        #expect(value("is", candidate) == nil)
+
+        // Everything after the expanding scalar still matches, with ranges
+        // that stay aligned to the original string.
+        let stan = FuzzyMatch.score(pattern: "stan", in: candidate)
+        #expect(stan != nil)
+        #expect((candidate as NSString).substring(with: stan!.ranges[0]) == "stan")
+
+        let trip = FuzzyMatch.score(pattern: "trip", in: candidate)
+        #expect(trip != nil)
+        #expect((candidate as NSString).substring(with: trip!.ranges[0]) == "Trip")
+
+        // The expanding scalar mid-string is equally safe.
+        #expect(value("izmir", "Trip to İzmir") != nil)
+    }
+
     @Test("ranking a realistic set puts the obvious answer first")
     func ranking() {
         let candidates = [
