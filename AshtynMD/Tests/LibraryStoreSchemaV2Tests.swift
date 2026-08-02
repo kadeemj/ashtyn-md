@@ -211,6 +211,22 @@ struct LibraryStoreSchemaV2Tests {
         }
     }
 
+    @Test("the snippet uses private-use-area markers, not visible bracket characters")
+    func snippetUsesPrivateUseAreaMarkers() async throws {
+        try await withMigratedStore(seed: false) { (store: LibraryStore) async throws -> Void in
+            try await add(
+                store, "Note.md",
+                "Fruit Notes\n\nThe body mentions kumquats exactly once."
+            )
+            let results = try await store.search("kumquats")
+            let snippet = results.first?.snippet ?? ""
+            #expect(snippet.contains(SearchSnippet.openMarker))
+            #expect(snippet.contains(SearchSnippet.closeMarker))
+            #expect(!snippet.contains("⟦"))
+            #expect(!snippet.contains("⟧"))
+        }
+    }
+
     @Test("a title match outranks a body match")
     func titleIsWeightedAboveBody() async throws {
         try await withMigratedStore(seed: false) { (store: LibraryStore) async throws -> Void in

@@ -1009,7 +1009,7 @@ actor LibraryStore {
         // hardcoding either still compiles and silently returns wrong strings.
         return try database.query("""
             SELECT \(Self.recordColumns(prefixedWith: "f")),
-                   snippet(files_fts, 3, '⟦', '⟧', '…', 12)
+                   snippet(files_fts, 3, '\(SearchSnippet.openMarker)', '\(SearchSnippet.closeMarker)', '…', 12)
             FROM files_fts
             JOIN files f ON f.id = files_fts.rowid
             WHERE files_fts MATCH ?
