@@ -239,8 +239,6 @@ struct EditorTextView: NSViewRepresentable {
             }
             wikiLinkAutocomplete?.update()
             // Any edit cancels a stale AI request; automatic completion
-            // requires an empty selection and finished input composition.
-            // Any edit cancels a stale AI request; automatic completion
             // requires an empty selection, finished input composition, and
             // no active wiki-link popover (the two features must never
             // compete for the same keystroke).

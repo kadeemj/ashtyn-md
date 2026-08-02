@@ -125,6 +125,11 @@ final class EditorWorkflowUITests: UITestCase {
         // The automatic trigger fires after 800ms of inactivity; give it a
         // full second while the popover is still open and confirm it never
         // arms.
+        // Confirm ghost text hasn't already appeared — XCTNSPredicateExpectation
+        // below only detects a transition, so it can't catch a case where
+        // suppression already failed before this point.
+        XCTAssertNotEqual(editor.label, "Document editor, AI suggestion: fixtureSuggestion")
+
         let ghostTextAppeared = XCTNSPredicateExpectation(
             predicate: NSPredicate(
                 format: "label == %@",
