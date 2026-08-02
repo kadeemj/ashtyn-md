@@ -55,18 +55,37 @@ final class EditorWorkflowUITests: UITestCase {
         let editor = openFixtureNote()
         editor.click()
         editor.typeKey(.end, modifierFlags: [.command])
-        editor.typeKey(" ", modifierFlags: [.control, .option])
+        app.typeKey(" ", modifierFlags: [.control, .option])
         waitForGhostText(in: editor)
         editor.typeKey(.tab, modifierFlags: [])
         XCTAssertTrue(text(in: editor).hasSuffix("fixtureSuggestion"))
 
-        editor.typeKey(" ", modifierFlags: [.control, .option])
+        app.typeKey(" ", modifierFlags: [.control, .option])
         waitForGhostText(in: editor)
         editor.typeKey(.escape, modifierFlags: [])
         editor.typeKey(.tab, modifierFlags: [])
         let acceptedCount = text(in: editor)
             .components(separatedBy: "fixtureSuggestion").count - 1
         XCTAssertEqual(acceptedCount, 1)
+    }
+
+    func testWikiLinkAutocompleteSelectsSuggestion() {
+        launch()
+        let editor = openFixtureNote()
+        editor.click()
+        editor.typeKey(.end, modifierFlags: [.command])
+        editor.typeKey(.enter, modifierFlags: [])
+        editor.typeKey(.enter, modifierFlags: [])
+        editor.typeText("[[Week")
+
+        let suggestion = element(AccessibilityID.wikiLinkSuggestion(0))
+        XCTAssertTrue(suggestion.waitForExistence(timeout: 5), suggestion.debugDescription)
+        suggestion.click()
+
+        XCTAssertTrue(
+            text(in: editor).contains("[[Weekly Review]]"),
+            editor.debugDescription
+        )
     }
 
     func testStandaloneDocumentLaunch() {
@@ -80,6 +99,8 @@ final class EditorWorkflowUITests: UITestCase {
 
     func testLargeFileOpenAnywayKeepsAIDisabled() {
         launch()
+        // The fixture lives at the library root; launch defaults to Inbox.
+        chooseSidebarItem("Notes")
         let large = file(named: "Large.md")
         XCTAssertTrue(large.waitForExistence(timeout: 10))
         large.click()

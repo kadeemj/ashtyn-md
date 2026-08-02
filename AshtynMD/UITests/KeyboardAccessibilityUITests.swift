@@ -44,7 +44,7 @@ final class KeyboardAccessibilityUITests: UITestCase {
         launch()
         let editor = openFixtureNote()
         editor.click()
-        editor.typeKey(" ", modifierFlags: [.control, .option])
+        app.typeKey(" ", modifierFlags: [.control, .option])
         waitForGhostText(in: editor)
         editor.typeKey(.escape, modifierFlags: [])
         editor.typeKey(.tab, modifierFlags: [])

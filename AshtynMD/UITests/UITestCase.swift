@@ -15,11 +15,19 @@ class UITestCase: XCTestCase {
         standalone: Bool = false
     ) {
         app = XCUIApplication()
-        app.launchArguments = ["-ui-testing", "-AppleKeyboardUIMode", "3"]
+        // A previous macOS run can persist a closed main WindowGroup. UI
+        // tests always need a fresh library window, independent of that user
+        // state.
+        app.launchArguments = [
+            "-ui-testing",
+            "-AppleKeyboardUIMode", "3",
+            "-ApplePersistenceIgnoreState", "YES"
+        ]
         if reset { app.launchArguments.append("-ui-test-reset") }
         if onboarding { app.launchArguments.append("-ui-test-show-onboarding") }
         if standalone { app.launchArguments.append("-ui-test-standalone") }
         app.launch()
+        app.activate()
     }
 
     func element(_ identifier: String) -> XCUIElement {
@@ -41,7 +49,15 @@ class UITestCase: XCTestCase {
     /// Finds a note row by its filename, for assertions that care about what is
     /// on disk rather than what is displayed.
     func file(withName name: String) -> XCUIElement {
-        element(AccessibilityID.noteList)
+        let list = element(AccessibilityID.noteList)
+        let identified = list
+            .descendants(matching: .any)
+            .matching(NSPredicate(format: "identifier == %@", name))
+            .firstMatch
+        if identified.exists || identified.waitForExistence(timeout: 1) {
+            return identified
+        }
+        return list
             .descendants(matching: .any)
             .matching(NSPredicate(format: "value == %@", name))
             .firstMatch
@@ -76,14 +92,25 @@ class UITestCase: XCTestCase {
     }
 
     /// Sidebar rows carry a count in their accessibility value now, so they are
-    /// matched on label rather than value.
+    /// matched on label rather than value. Folder rows are native file-system
+    /// rows on macOS and expose their visible name as `value`, so retain a
+    /// value fallback for those rows.
     func chooseSidebarItem(_ title: String) {
-        let item = element(AccessibilityID.sidebar)
+        app.activate()
+        let labeledItem = element(AccessibilityID.sidebar)
             .descendants(matching: .any)
             .matching(NSPredicate(format: "label == %@", title))
             .firstMatch
-        XCTAssertTrue(item.waitForExistence(timeout: 10))
-        item.click()
+        if labeledItem.exists || labeledItem.waitForExistence(timeout: 1) {
+            labeledItem.click()
+            return
+        }
+        let valuedItem = element(AccessibilityID.sidebar)
+            .descendants(matching: .any)
+            .matching(NSPredicate(format: "value == %@", title))
+            .firstMatch
+        XCTAssertTrue(valuedItem.waitForExistence(timeout: 10))
+        valuedItem.click()
     }
 
     func chooseFileMenuItem(_ title: String) {

@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 @main
@@ -6,6 +7,19 @@ struct AshtynMDApp: App {
     @State private var appModel = AppModel()
 
     var body: some Scene {
+        configuredMainWindow
+
+        WindowGroup(id: WindowID.standaloneDocument, for: URL.self) { $url in
+            StandaloneDocumentView(url: url)
+        }
+
+        Settings {
+            SettingsView()
+                .environment(appModel)
+        }
+    }
+
+    private var configuredMainWindow: some Scene {
         WindowGroup {
             LibraryWindowView()
                 .environment(appModel)
@@ -235,14 +249,6 @@ struct AshtynMDApp: App {
             }
         }
 
-        WindowGroup(id: WindowID.standaloneDocument, for: URL.self) { $url in
-            StandaloneDocumentView(url: url)
-        }
-
-        Settings {
-            SettingsView()
-                .environment(appModel)
-        }
     }
 
     private var languageOverrideBinding: Binding<LanguageID?> {
@@ -271,19 +277,81 @@ struct AshtynMDApp: App {
 }
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    #if DEBUG
+    private var uiTestMenuTarget: UITestMenuTarget?
+    private var uiTestEventMonitor: Any?
+    #endif
+    private var uiTestFallbackWindow: NSWindow?
+    private var uiTestStandaloneWindow: NSWindow?
+
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // Instantiating the registry installs its activation observers.
-        _ = SessionRegistry.shared
+        // SwiftUI creates the WindowGroup after the application delegate
+        // callback. Activate once more on the next main-actor turn so a
+        // launch from XCTest cannot leave the freshly created window behind
+        // the test runner.
+        Task { @MainActor in
+            await Task.yield()
+            NSApp.activate(ignoringOtherApps: true)
+            NSApp.windows.first?.makeKeyAndOrderFront(nil)
+        }
         #if DEBUG
-        if UITestLaunchConfiguration.current.isEnabled,
-           UITestLaunchConfiguration.current.opensStandalone,
-           let url = try? UITestLaunchConfiguration.standaloneFixtureURL() {
-            Task { @MainActor in
-                await Task.yield()
-                StandaloneOpenRequests.shared.requests.send(url)
+        if UITestLaunchConfiguration.current.isEnabled {
+            Task { @MainActor [weak self] in
+                // XCTest can launch the process without asking SwiftUI to
+                // materialize its initial WindowGroup. Give the scene a few
+                // turns first, then provide the same root view in a regular
+                // AppKit window if it still has not appeared.
+                for _ in 0..<60 {
+                    await Task.yield()
+                }
+                guard let self else { return }
+                let appModel = AppModel.applicationInstance
+                if NSApp.windows.isEmpty, let appModel {
+                    let window = NSWindow(
+                        contentRect: NSRect(x: 0, y: 0, width: 1_120, height: 720),
+                        styleMask: [.titled, .closable, .miniaturizable, .resizable],
+                        backing: .buffered,
+                        defer: false
+                    )
+                    window.title = "Ashtyn MD"
+                    window.minSize = NSSize(width: 960, height: 520)
+                    window.contentView = NSHostingView(
+                        rootView: LibraryWindowView().environment(appModel)
+                    )
+                    window.center()
+                    self.uiTestFallbackWindow = window
+                    window.makeKeyAndOrderFront(nil)
+                }
+
+                // A launch request can arrive before the WindowGroup has a
+                // subscriber, so the request-only path loses the standalone
+                // fixture under XCTest. Host that fixture directly in the
+                // same AppKit window fallback used for the library window.
+                if UITestLaunchConfiguration.current.opensStandalone,
+                   let url = try? UITestLaunchConfiguration.standaloneFixtureURL() {
+                    let window = NSWindow(
+                        contentRect: NSRect(x: 0, y: 0, width: 760, height: 560),
+                        styleMask: [.titled, .closable, .miniaturizable, .resizable],
+                        backing: .buffered,
+                        defer: false
+                    )
+                    window.title = url.lastPathComponent
+                    window.contentView = NSHostingView(
+                        rootView: StandaloneDocumentView(url: url)
+                    )
+                    window.center()
+                    self.uiTestStandaloneWindow = window
+                    window.makeKeyAndOrderFront(nil)
+                }
+                if let appModel = AppModel.applicationInstance {
+                    self.installUITestKeyboardMonitor(for: appModel)
+                }
+                NSApp.activate(ignoringOtherApps: true)
             }
         }
         #endif
+        // Instantiating the registry installs its activation observers.
+        _ = SessionRegistry.shared
     }
 
     func application(_ application: NSApplication, open urls: [URL]) {
@@ -292,8 +360,122 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    func applicationShouldOpenUntitledFile(_ sender: NSApplication) -> Bool {
+        true
+    }
+
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         SessionRegistry.shared.saveAllBlockingForTermination()
         return .terminateNow
     }
+
+    #if DEBUG
+    @MainActor
+    private func installUITestKeyboardMonitor(for appModel: AppModel) {
+        let target = UITestMenuTarget(appModel: appModel)
+        uiTestMenuTarget = target
+        uiTestEventMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) {
+            [weak target] event in
+            guard let target else { return event }
+            let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+            let handled: (() -> Void)?
+            switch (event.keyCode, flags) {
+            case (49, [.control, .option]):
+                handled = { target.complete(nil) }
+            case (20, [.command, .option]):
+                handled = { target.preview(nil) }
+            case (45, [.command]):
+                handled = { target.newNote(nil) }
+            case (45, [.command, .shift]):
+                handled = { target.newFolder(nil) }
+            case (45, [.command, .option]):
+                handled = {
+                    guard let appModel = target.appModel else { return }
+                    appModel.actions.newNoteInSelectedLocation(
+                        selection: appModel.sidebarSelection
+                    )
+                }
+            case (3, [.command, .shift]):
+                handled = { target.search(nil) }
+            case (1, [.command]):
+                handled = { target.save(nil) }
+            case (13, [.command]):
+                handled = { target.closeTab(nil) }
+            default:
+                handled = nil
+            }
+            guard let handled else { return event }
+            Task { @MainActor in handled() }
+            return nil
+        }
+    }
+    #endif
 }
+
+#if DEBUG
+@MainActor
+private final class UITestMenuTarget: NSObject {
+    weak var appModel: AppModel?
+
+    init(appModel: AppModel) {
+        self.appModel = appModel
+    }
+
+    @objc func newNote(_ sender: Any?) {
+        appModel?.actions.newNoteInInbox()
+    }
+
+    @objc func newFolder(_ sender: Any?) {
+        guard let appModel else { return }
+        appModel.actions.newFolder(named: "New Folder", selection: appModel.sidebarSelection)
+    }
+
+    @objc func newCodeFile(_ sender: NSMenuItem) {
+        guard let appModel,
+              let rawValue = sender.representedObject as? String,
+              let language = LanguageID(rawValue: rawValue) else { return }
+        appModel.actions.newNoteInSelectedLocation(
+            language: language,
+            selection: appModel.sidebarSelection
+        )
+    }
+
+    @objc func save(_ sender: Any?) {
+        SessionRegistry.shared.saveAll(reason: .explicit)
+    }
+
+    @objc func closeTab(_ sender: Any?) {
+        guard let appModel, let activeTabID = appModel.tabs.activeTabID else { return }
+        appModel.tabs.close(activeTabID)
+    }
+
+    @objc func search(_ sender: Any?) {
+        appModel?.sidebarSelection = .search
+    }
+
+    @objc func complete(_ sender: Any?) {
+        if let editor = NSApp.keyWindow?.firstResponder as? PlainTextView {
+            editor.requestAICompletion(sender)
+            return
+        }
+        if let editor = findEditor(in: NSApp.keyWindow?.contentView) {
+            editor.requestAICompletion(sender)
+            return
+        }
+        NSApp.sendAction(#selector(PlainTextView.requestAICompletion(_:)), to: nil, from: sender)
+    }
+
+    @objc func preview(_ sender: Any?) {
+        appModel?.activeSession?.requestPreviewMode("preview")
+    }
+
+    private func findEditor(in view: NSView?) -> PlainTextView? {
+        guard let view else { return nil }
+        if let editor = view as? PlainTextView { return editor }
+        for child in view.subviews {
+            if let editor = findEditor(in: child) { return editor }
+        }
+        return nil
+    }
+}
+#endif

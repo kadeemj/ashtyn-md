@@ -9,6 +9,11 @@ import Observation
 @MainActor
 @Observable
 final class AppModel {
+    /// The DEBUG UI-test fallback window is created by the app delegate,
+    /// which may outlive SwiftUI's state wrapper during scene bootstrap.
+    /// Keep the composition root available for that handoff.
+    static var applicationInstance: AppModel?
+
     let session = LibrarySession()
     let tabs = TabsModel()
     let noteList = NoteListModel()
@@ -19,6 +24,9 @@ final class AppModel {
 
     private(set) var openError: String?
     private(set) var tagRewriteUndoAvailable = false
+    /// Bumps when indexed files change so secondary surfaces can refresh
+    /// actor-backed queries without polling.
+    private(set) var libraryChangeGeneration = 0
 
     /// Per-library opt-in: render raw HTML in Markdown previews.
     var allowRawHTML = false {
@@ -61,6 +69,7 @@ final class AppModel {
     }
 
     init() {
+        Self.applicationInstance = self
         actions = NoteActionsModel(
             dependencies: NoteActionsModel.Dependencies(
                 session: { [unowned self] in self.session },
@@ -214,6 +223,7 @@ final class AppModel {
     }
 
     private func refreshLists() {
+        libraryChangeGeneration &+= 1
         noteList.refresh(using: session)
         tags.refresh(using: session)
     }
