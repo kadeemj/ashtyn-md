@@ -1,11 +1,25 @@
 import SwiftUI
 
+/// Wraps a `QuickOpenModel` so `.sheet(item:)` can own its lifetime. Plain
+/// `.sheet(isPresented:)` plus a *separate* `@State` model was tried first,
+/// but SwiftUI can present that sheet's content closure using a snapshot
+/// from just before both `@State` writes landed, evaluating the closure with
+/// the model still `nil` even though it was set moments earlier in the same
+/// handler — the two pieces of state were not atomic from the sheet's point
+/// of view. Folding presence and content into one `Identifiable` value that
+/// `.sheet(item:)` binds to removes that race: there is no longer a "started
+/// presenting" flag that can disagree with "which model to show."
+private struct QuickOpenSheetItem: Identifiable {
+    let id = UUID()
+    let model: QuickOpenModel
+}
+
 /// Root view of a library window: onboarding until a root folder is chosen,
 /// then the three-column library layout.
 struct LibraryWindowView: View {
     @Environment(AppModel.self) private var appModel
     @Environment(\.openWindow) private var openWindow
-    @State private var isQuickOpenPresented = false
+    @State private var quickOpenSheetItem: QuickOpenSheetItem?
 
     var body: some View {
         Group {
@@ -25,13 +39,16 @@ struct LibraryWindowView: View {
         }
         .onReceive(LibraryCommandRequests.shared.requests) { request in
             switch request {
-            case .quickOpen: isQuickOpenPresented = true
+            case .quickOpen:
+                quickOpenSheetItem = QuickOpenSheetItem(
+                    model: QuickOpenModel(store: appModel.session.store)
+                )
             case .moveToFolder: break // handled by NoteListView's own receiver
             }
         }
-        .sheet(isPresented: $isQuickOpenPresented) {
+        .sheet(item: $quickOpenSheetItem) { item in
             QuickOpenView(
-                model: QuickOpenModel(store: appModel.session.store),
+                model: item.model,
                 onSelect: { record in
                     if let url = appModel.absoluteURL(of: record) {
                         appModel.openFile(at: url)
