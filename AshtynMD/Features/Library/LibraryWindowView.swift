@@ -5,6 +5,7 @@ import SwiftUI
 struct LibraryWindowView: View {
     @Environment(AppModel.self) private var appModel
     @Environment(\.openWindow) private var openWindow
+    @State private var isQuickOpenPresented = false
 
     var body: some View {
         Group {
@@ -21,6 +22,22 @@ struct LibraryWindowView: View {
             } else {
                 openWindow(id: WindowID.standaloneDocument, value: url)
             }
+        }
+        .onReceive(LibraryCommandRequests.shared.requests) { request in
+            switch request {
+            case .quickOpen: isQuickOpenPresented = true
+            case .moveToFolder: break // handled by NoteListView's own receiver
+            }
+        }
+        .sheet(isPresented: $isQuickOpenPresented) {
+            QuickOpenView(
+                model: QuickOpenModel(store: appModel.session.store),
+                onSelect: { record in
+                    if let url = appModel.absoluteURL(of: record) {
+                        appModel.openFile(at: url)
+                    }
+                }
+            )
         }
     }
 }
@@ -382,6 +399,7 @@ struct NoteListView: View {
         .onReceive(LibraryCommandRequests.shared.requests) { request in
             switch request {
             case .moveToFolder: isMovePresented = true
+            case .quickOpen: break // handled by LibraryWindowView's own receiver
             }
         }
     }

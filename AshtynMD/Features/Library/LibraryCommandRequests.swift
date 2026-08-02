@@ -13,6 +13,7 @@ final class LibraryCommandRequests {
 
     enum Request: Sendable {
         case moveToFolder
+        case quickOpen
     }
 
     private let subject = PassthroughSubject<Request, Never>()

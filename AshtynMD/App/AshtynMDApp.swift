@@ -92,6 +92,12 @@ struct AshtynMDApp: App {
                 .keyboardShortcut("f", modifiers: [.command, .shift])
                 .disabled(appModel.libraryRoot == nil)
 
+                Button("Quick Open…") {
+                    LibraryCommandRequests.shared.send(.quickOpen)
+                }
+                .keyboardShortcut("o", modifiers: [.command, .shift])
+                .disabled(appModel.libraryRoot == nil)
+
                 Divider()
 
                 Button("Go to Line…") { sendToEditor(#selector(PlainTextView.goToLine(_:))) }
@@ -407,6 +413,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 }
             case (3, [.command, .shift]):
                 handled = { target.search(nil) }
+            case (31, [.command, .shift]):
+                handled = { target.quickOpen(nil) }
             case (1, [.command]):
                 handled = { target.save(nil) }
             case (13, [.command]):
@@ -461,6 +469,10 @@ private final class UITestMenuTarget: NSObject {
 
     @objc func search(_ sender: Any?) {
         appModel?.sidebarSelection = .search
+    }
+
+    @objc func quickOpen(_ sender: Any?) {
+        LibraryCommandRequests.shared.send(.quickOpen)
     }
 
     @objc func complete(_ sender: Any?) {
