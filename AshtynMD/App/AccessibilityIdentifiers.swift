@@ -30,4 +30,5 @@ enum AccessibilityID {
     static func wikiLinkSuggestion(_ index: Int) -> String {
         "\(wikiLinkSuggestionPrefix).\(index)"
     }
+    static let wikiLinkCreateNote = "document.wiki-link-create-note"
 }

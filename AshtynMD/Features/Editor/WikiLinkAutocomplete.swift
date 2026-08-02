@@ -298,46 +298,104 @@ private struct WikiLinkAutocompletePopoverView: View {
                     .controlSize(.small)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 9)
-            } else if model.suggestions.isEmpty {
+            } else if model.suggestions.isEmpty && !model.showsCreateNoteRow {
                 Text("No matching notes")
                     .font(.callout)
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 9)
             } else {
-                ForEach(Array(model.suggestions.enumerated()), id: \.element.id) { index, suggestion in
-                    let record = suggestion.record
-                    Button {
-                        onSelect()
-                    } label: {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(record.title.isEmpty ? record.name : record.title)
-                                .lineLimit(1)
-                            Text(record.relativePath)
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(1)
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 0) {
+                        ForEach(Array(model.suggestions.enumerated()), id: \.element.id) { index, suggestion in
+                            row(
+                                title: highlightedTitle(suggestion),
+                                subtitle: subtitle(for: suggestion),
+                                isSelected: index == model.selectedIndex,
+                                identifier: AccessibilityID.wikiLinkSuggestion(index),
+                                label: suggestion.record.title.isEmpty
+                                    ? suggestion.record.name : suggestion.record.title
+                            )
                         }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 5)
-                        .background(
-                            index == model.selectedIndex
-                                ? Color.accentColor.opacity(0.16)
-                                : Color.clear,
-                            in: RoundedRectangle(cornerRadius: 5)
-                        )
+                        if model.showsCreateNoteRow, let context = model.context {
+                            row(
+                                title: AttributedString("Create note \u{201C}\(context.query)\u{201D}"),
+                                subtitle: nil,
+                                isSelected: model.selectedIndex == model.suggestions.count,
+                                identifier: AccessibilityID.wikiLinkCreateNote,
+                                label: "Create note \(context.query)"
+                            )
+                        }
                     }
-                    .buttonStyle(.plain)
-                    .accessibilityIdentifier(AccessibilityID.wikiLinkSuggestion(index))
-                    .accessibilityLabel(record.title.isEmpty ? record.name : record.title)
                 }
+                .frame(maxHeight: 260)
             }
         }
         .padding(6)
         .frame(width: 320)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier(AccessibilityID.wikiLinkAutocomplete)
+    }
+
+    private func row(
+        title: AttributedString,
+        subtitle: String?,
+        isSelected: Bool,
+        identifier: String,
+        label: String
+    ) -> some View {
+        Button {
+            onSelect()
+        } label: {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).lineLimit(1)
+                if let subtitle {
+                    Text(subtitle)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 5)
+            .background(
+                isSelected ? Color.accentColor.opacity(0.16) : Color.clear,
+                in: RoundedRectangle(cornerRadius: 5)
+            )
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier(identifier)
+        .accessibilityLabel(label)
+    }
+
+    private func subtitle(for suggestion: WikiLinkSuggestion) -> String {
+        let tag = suggestion.primaryTag.map { "#\($0)" } ?? "Untagged"
+        let date = suggestion.record.modifiedAt.formatted(.relative(presentation: .named))
+        return "\(tag) · edited \(date)"
+    }
+
+    private func highlightedTitle(_ suggestion: WikiLinkSuggestion) -> AttributedString {
+        let title = suggestion.record.title.isEmpty ? suggestion.record.name : suggestion.record.title
+        let attributed = NSMutableAttributedString(string: title)
+        let fullLength = (title as NSString).length
+        for range in suggestion.matchedRanges {
+            let bounded = NSRange(
+                location: max(0, min(range.location, fullLength)),
+                length: range.length
+            )
+            let clamped = NSRange(
+                location: bounded.location,
+                length: min(bounded.length, fullLength - bounded.location)
+            )
+            guard clamped.length > 0 else { continue }
+            attributed.addAttribute(
+                .font,
+                value: NSFont.boldSystemFont(ofSize: NSFont.systemFontSize),
+                range: clamped
+            )
+        }
+        return AttributedString(attributed)
     }
 }
 
@@ -453,7 +511,7 @@ final class WikiLinkAutocompleteController: NSObject, NSPopoverDelegate {
             popover.behavior = .semitransient
             popover.animates = false
             popover.delegate = self
-            popover.contentSize = NSSize(width: 332, height: 120)
+            popover.contentSize = NSSize(width: 332, height: 280)
             self.popover = popover
         }
 
