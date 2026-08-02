@@ -1,137 +1,130 @@
-# Wiki-Link Autocomplete Popover — Design
+# Wiki-Link Autocomplete — Gap-Closing Design
 
 **Date:** 2026-08-02
-**Branch:** `phase-7`
-**Scope:** Gate 5, Task 28 (per `docs/PHASE-7-HANDOFF.md` and `docs/GATE-5-TASK-27-HANDOFF.md`)
+**Branch:** `main`
+**Scope:** Gate 5, Task 28 follow-up (per `docs/PHASE-7-HANDOFF.md`)
 **Status:** Approved, ready for implementation planning
 
-## Goal
+## Context
 
-While typing a wiki link (`[[...`) in the Markdown editor, show a live-filtered
-popover of matching note titles so the user can insert a link without leaving
-the keyboard, and create a new note on the spot when nothing matches.
+Task 28 (the wiki-link autocomplete popover) was designed from scratch in this
+session before it became clear that it had already been implemented, tested,
+and merged to `main` in commit `7a13e77` ("feat: add wiki-link autocomplete"),
+independently of this conversation. That implementation is solid — real
+XCUITest coverage, a clean debounce/cancellation state machine, correct
+keyboard-priority handling — but it differs from what was designed here in a
+few concrete ways. This document is now scoped as a **follow-up that closes
+those specific gaps against the existing code**, not a from-scratch build.
 
-## Background
+## What's already built (no changes needed)
 
-Store-side support already exists and is tested: `LibraryStore.titleSuggestions`,
-`resolveWikiLink`, `backlinks`, `outgoingLinks`. What's missing is the editor-side
-trigger, ranking, and UI.
+All in `AshtynMD/Features/Editor/WikiLinkAutocomplete.swift` unless noted:
 
-Two existing things must **not** be reused as-is, for reasons already on record:
+- **Trigger detection** — `WikiLinkAutocompleteContext.detect` scans backward
+  for an unclosed `[[`, is escape-aware (an odd count of preceding backslashes
+  bails out), and bails on `\n`, `\r`, `|`, `]]`, or a nested `[` in the query.
+  This is more complete than the original design (it handles backslash-escaped
+  `\[[`, which hadn't been considered).
+- **Debounce + cancellation** — `WikiLinkAutocompleteModel`, 120 ms debounce,
+  a per-request `requestID` guards against stale results replacing a newer
+  query.
+- **Popover positioning** — `NSPopover` anchored to
+  `textView.firstRect(forCharacterRange:)`, `.semitransient` behavior,
+  repositions as the context changes.
+- **Keyboard priority** — Up/Down/Return/Escape via `handleKeyDown`; Tab via
+  `PlainTextView.insertTab`, checked *before* AI ghost-text acceptance. So
+  "the popover wins" is already correct at accept-time.
+- **Insertion** — one undoable edit via `textView.applyExternalEdit`,
+  replacing exactly `context.targetRange`.
+- **Bracket auto-pairing** (`PlainTextView.insertText`, pre-existing feature,
+  unrelated to this task) already inserts `[[|]]` with the caret between the
+  brackets in the common case — so accepted suggestions normally don't need
+  to append `]]` themselves. The one gap: if `[[` was typed immediately
+  before non-whitespace text, auto-pairing doesn't fire and no `]]` exists
+  yet. Insertion should check for this and append `]]` only when it's
+  actually missing.
+- **Unit/UI coverage** — `WikiLinkAutocompleteTests.swift`,
+  `EditorWorkflowUITests.swift`.
 
-- `EditorTextView`'s `completions(forPartialWordRange:)` (`EditorTextView.swift:204`)
-  is NSTextView's built-in word-completion hook. It only fires on explicit
-  Control-Space, `forPartialWordRange` excludes `[` and stops at spaces, it
-  returns a bare synchronous `[String]`, and title lookup is an actor call.
-  It cannot be adapted; a new mechanism is needed.
-- `AICompletionController` is the right model for the *async shape*
-  (debounce → cancel-on-supersede → actor-backed fetch), but its UI shape is
-  inline ghost text with Tab-to-accept, not a list. The wiki-link feature needs
-  a genuinely new UI element — there is no existing `NSPopover` or list-picker
-  anywhere in the app to imitate visually, which is why the popover's look was
-  worked out separately (see Visual Design below).
+## Gap 1 — Fuzzy matching + highlighting
 
-Confirmed while designing this: wiki links are display-only today
-(`MarkdownStyleScanner`/`MarkdownAttributeBuilder` only underline them; nothing
-resolves or creates a note on click). So there is no later point at which an
-unresolved link could lazily create its target — creation has to happen at
-insertion time, when the user picks "Create note" from the popover.
+`LibraryStore.titleSuggestions` does a SQL prefix `LIKE` match ordered by
+`mtime DESC`. Widen it (or add a sibling method) to fetch a bounded candidate
+set, then rank in-app with the existing, currently-unused
+`FuzzyMatch.score(pattern:in:)` — the same DP matcher Gate 0 built because
+prefix/greedy ranking put "Wireframes" above "Work Retrospective" for "wr".
+`WikiLinkAutocompleteModel`'s `suggestionProvider` closure signature
+(`(String, Int) async -> [FileRecord]`) doesn't need to change — this is a
+change inside the provider, not the state machine. Use `FuzzyMatch.Score`'s
+matched-position ranges to bold the matching characters in
+`WikiLinkAutocompletePopoverView`'s title text.
 
-`MarkdownMaskIndex.parseWikiLink` defines the only link syntax the app
-recognizes: `[[<text>]]`, no pipe/alias form. The autocomplete does not need to
-handle alias syntax because none exists to handle.
+## Gap 2 — "Create note" row
 
-## Trigger & Lifecycle
+Currently, an empty result set renders "No matching notes" with no way
+forward. Instead: when the query is non-empty and the ranked result list is
+empty, append a synthetic trailing row, `Create note "<query>"`, in place of
+the dead-end placeholder. (No partial-match threshold — fuzzy matching still
+returns anything with a nonzero score, so this only fires when truly nothing
+matches.) Selecting it:
 
-- **Open condition:** the caret sits inside an unclosed `[[` on the current
-  line — scan backward from the caret for the nearest `[[` that is not
-  already followed by a `]]` before the caret. The substring from just after
-  that `[[` to the caret is the live query.
-- **Debounce:** ~150 ms per keystroke (shorter than the AI controller's 800 ms
-  — this is a local DB read, not a network stream, so it can afford to feel
-  more immediate).
-- **Suppression:** while the popover is open, `AICompletionController`'s
-  automatic trigger (`noteEdit`'s 800 ms inactivity timer) is skipped
-  entirely. The two features never compete for the same keystroke.
-- **Close conditions:** Escape; caret moves outside the open `[[` range
-  (including by typing the closing `]]` itself, which completes the link);
-  click elsewhere in the document; editor loses focus.
+- Replaces `context.targetRange` with the typed query (same insertion path as
+  an existing-title match), appending `]]` only if it isn't already present
+  immediately after the caret (see the auto-pairing note above).
+- Creates a new, empty Markdown file titled from the query, **in the same
+  directory as the note currently being edited** — there's no sidebar-context
+  signal available from inside the editor to do otherwise. Reuse/extend
+  `NoteActionsModel`'s existing file-creation path (`create(language:in:seedTag:)`)
+  rather than duplicating `FileOperations` calls. The new file is picked up
+  by the ordinary indexer pass; no special-case indexing is needed.
+- On file-creation failure, surface the error once and stop, matching the
+  pattern `TitleRenameCoordinator` already uses for its own failures.
 
-## Matching & Ranking
+## Gap 3 — Full AI-trigger suppression
 
-- `LibraryStore.titleSuggestions` currently does a SQL prefix `LIKE` match
-  ordered by `mtime DESC`. This will be widened to fetch a bounded candidate
-  set (still filtered to `trashed_at IS NULL`), then ranked in-app with the
-  existing, currently-unused `FuzzyMatch.score(pattern:in:)` — the same DP
-  matcher Gate 0 built specifically because prefix/greedy ranking put
-  "Wireframes" above "Work Retrospective" for the query "wr". Results sort by
-  score.
-- **Empty query** (caret right after a freshly typed `[[`): skip fuzzy scoring
-  and show recently-modified notes, matching Bear/Obsidian convention of
-  offering recents before the user types anything.
-- Matched character ranges from `FuzzyMatch.Score` are used to bold/highlight
-  the matching characters in each row's title.
+`EditorTextView.Coordinator.textDidChange` already calls
+`wikiLinkAutocomplete?.update()` before `aiController.noteEdit(...)`, but
+nothing stops the latter from arming its own 800 ms trigger while the popover
+is showing. Guard that call so it's skipped whenever
+`wikiLinkAutocomplete?.model.isActive == true` — the same place `isEligible`
+already gates on selection/composition state, so this is a one-line addition
+to an existing check, not new plumbing.
 
-## Visual Design
+## Gap 4 — Polish parity
 
-Settled interactively (mockups in `.superpowers/brainstorm/`, not committed):
-
-- Rounded 8px corners, compact row height, no per-row icon.
-- Each row: title (with fuzzy-matched characters highlighted) on one line,
-  a muted `tag · relative-date` metadata line beneath it.
-- Selected row filled with the accent color.
-- Adapts to the app's active light/dark theme (mockups were dark-only;
-  color values must be re-derived from the existing theme system, not
-  hardcoded).
-- Anchored to the caret's screen rect (`NSTextView.firstRect(forCharacterRange:)`
-  is the natural AppKit API here) and repositions live as the user types or
-  scrolls.
-- Scrollable if the ranked results exceed the visible row count (~8 rows);
-  Up/Down navigates through the full result set, not just what's visible.
-- A trailing `Create note "<query>"` row appears whenever the query is
-  non-empty and nothing scores well enough to be a confident match.
-
-## Insertion Behavior
-
-- Selecting an existing title replaces the typed query (from `[[` to the
-  caret) with that title and auto-appends `]]` if the closing brackets are
-  not already present; caret lands just after the inserted `]]`.
-- Selecting "Create note" performs the same text replacement/insertion for
-  the literal typed query, and creates a new, empty Markdown file titled
-  accordingly **in the same directory as the note currently being edited**
-  (there is no sidebar-context signal available from inside the editor to
-  do otherwise). The new file is picked up by the ordinary indexer pass;
-  no special-case indexing is needed.
-- Keyboard: Up/Down moves the highlighted row; Return or Tab accepts it.
-  Tab is unambiguous here because the popover suppresses AI ghost text
-  while open (see Trigger & Lifecycle).
-
-## Error Handling
-
-- Title lookup failures (actor/DB errors) fail silently — the popover simply
-  shows no results, the same low-stakes posture as any other local-index
-  read; this is not worth a user-facing error path.
-- "Create note" file-creation failures surface the error once and stop,
-  matching the existing pattern used by `TitleRenameCoordinator` for its own
-  failure cases.
+- Swap the popover row's secondary line from `record.relativePath` to
+  `"#<primary tag> · edited <relative date>"`, falling back to "Untagged"
+  when a note has no tags. This was the originally agreed visual design;
+  the shipped `relativePath` is a reasonable alternative but wasn't the
+  decision made when the visual style was picked.
+- `WikiLinkAutocompleteModel.update` currently short-circuits to `cancel()`
+  when the query is empty (`!next.query.isEmpty` guard). Change this so an
+  empty query (caret right after a freshly typed `[[`) instead populates
+  `suggestions` with recently-modified notes, matching Bear/Obsidian
+  convention of showing recents before the user types anything.
 
 ## Testing Plan
 
-- Trigger-range unit tests: caret inside/outside/at the edges of `[[`,
-  multiple `[[` on one line, an already-closed `[[...]]`, adjacent spaces.
-- Ranking unit tests: fuzzy order matches expectation (the Gate 0 "wr"
-  example), empty-query falls back to recents.
-- Debounce/cancellation unit tests, mirroring `AICompletionControllerTests`.
-- Insertion unit tests: replacing query text, auto-appending `]]`, and the
-  create-note path producing a file the indexer subsequently picks up.
-- A UI test exercising keyboard selection end-to-end — written but, like the
-  rest of the Gate 4/5 UI test additions, unverified pending the existing
-  XCUITest automation-permission blocker documented in
-  `docs/PHASE-7-HANDOFF.md`.
+Additions to `WikiLinkAutocompleteTests.swift` (the existing trigger-range
+and debounce tests are unaffected):
+
+- Fuzzy ranking order (the Gate 0 "wr" example) and highlighted-range
+  correctness.
+- Create-note row appears only when the query is non-empty and the ranked
+  result list is empty; selecting it creates a file at the expected path and the
+  indexer subsequently sees it; `]]` is appended only when not already
+  present.
+- AI auto-trigger does not arm while `wikiLinkAutocomplete.model.isActive`.
+- Empty-query state shows recent notes instead of clearing.
+
+A UI test extending `EditorWorkflowUITests.swift` for the create-note flow —
+written but, like the rest of the Gate 4/5 UI test additions, only as
+reliable as the existing XCUITest automation-permission environment allows
+(documented in `docs/PHASE-7-HANDOFF.md`).
 
 ## Out of Scope
 
 - `[[target|alias]]` syntax — not supported by `MarkdownMaskIndex.parseWikiLink`
-  today and not part of this task.
+  and not part of this task.
 - Task 29 (search snippets/Quick Open) and Task 30 (export) are separate,
   already-planned tasks and untouched by this design.
