@@ -991,7 +991,7 @@ git commit -m "feat: add QuickOpenView, the fuzzy jump-to-note list UI"
 **Files:**
 - Modify: `AshtynMD/Features/Library/LibraryCommandRequests.swift` (add a `Request` case)
 - Modify: `AshtynMD/App/AshtynMDApp.swift` (new menu command + UI-test keyboard-monitor fallback)
-- Modify: `AshtynMD/Features/Library/LibraryWindowView.swift` (the root `LibraryWindowView`, lines 5-26 — add sheet state and presentation)
+- Modify: `AshtynMD/Features/Library/LibraryWindowView.swift` (the root `LibraryWindowView`, lines 5-26 — add sheet state and presentation; **and** the existing `NoteListView.onReceive(LibraryCommandRequests.shared.requests)` switch, around line 382-386 — see Step 1a, required for the build to compile)
 
 **Interfaces:**
 - Consumes: `QuickOpenView`, `QuickOpenModel` (Task 4/5); existing `appModel.session.store: LibraryStore?`, `appModel.absoluteURL(of: FileRecord) -> URL?`, `appModel.openFile(at: URL)`
@@ -1014,6 +1014,29 @@ to:
         case moveToFolder
         case quickOpen
     }
+```
+
+- [ ] **Step 1a: Keep `NoteListView`'s existing switch exhaustive**
+
+Adding `.quickOpen` above makes `NoteListView`'s existing `switch request { case .moveToFolder: ... }` (in `AshtynMD/Features/Library/LibraryWindowView.swift`, inside `NoteListView`'s `.onReceive(LibraryCommandRequests.shared.requests)`) non-exhaustive — Swift requires every enum case to be handled. This is a compile error, not a runtime behavior change, so it must be fixed in this same task, before Step 4 adds the new receiver. Change:
+
+```swift
+        .onReceive(LibraryCommandRequests.shared.requests) { request in
+            switch request {
+            case .moveToFolder: isMovePresented = true
+            }
+        }
+```
+
+to:
+
+```swift
+        .onReceive(LibraryCommandRequests.shared.requests) { request in
+            switch request {
+            case .moveToFolder: isMovePresented = true
+            case .quickOpen: break // handled by LibraryWindowView's own receiver
+            }
+        }
 ```
 
 - [ ] **Step 2: Add the menu command**
