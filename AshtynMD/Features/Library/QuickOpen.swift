@@ -54,8 +54,16 @@ final class QuickOpenModel {
             self.resultProvider = { query, limit in
                 guard let store else { return [] }
                 guard !query.isEmpty else {
-                    let recents = (try? await store.recents(limit: limit)) ?? []
-                    return await Self.makeResults(from: recents, store: store)
+                    // `titleCandidates`, not `recents`: it filters out
+                    // trashed/archived notes (`recents` does not, so a
+                    // trashed note could otherwise be offered and then fail
+                    // to open) and it still lists notes on a fresh library
+                    // where nothing has ever been opened, matching
+                    // `WikiLinkAutocompleteModel`'s empty-query behavior
+                    // (`WikiLinkAutocomplete.swift`), which this was meant to
+                    // mirror.
+                    let candidates = (try? await store.titleCandidates(limit: limit)) ?? []
+                    return await Self.makeResults(from: candidates, store: store)
                 }
                 let candidates = (try? await store.titleCandidates(limit: Self.candidatePoolSize)) ?? []
                 let ranked = candidates
