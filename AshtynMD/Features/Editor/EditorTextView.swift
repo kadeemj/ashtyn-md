@@ -13,9 +13,11 @@ struct EditorTextView: NSViewRepresentable {
     /// The active library store. Standalone documents leave this nil, which
     /// keeps wiki-link autocomplete unavailable outside a library.
     var libraryStore: LibraryStore? = nil
+    var reindex: (() -> Void)? = nil
+    var reportError: ((String) -> Void)? = nil
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(session: session, libraryStore: libraryStore)
+        Coordinator(session: session, libraryStore: libraryStore, reindex: reindex, reportError: reportError)
     }
 
     func makeNSView(context: Context) -> NSScrollView {
@@ -127,11 +129,20 @@ struct EditorTextView: NSViewRepresentable {
         var isPerformingTypewriterScroll = false
         let aiController = AICompletionController()
         private let libraryStore: LibraryStore?
+        private let reindex: (() -> Void)?
+        private let reportError: ((String) -> Void)?
         private var wikiLinkAutocomplete: WikiLinkAutocompleteController?
 
-        init(session: DocumentSession, libraryStore: LibraryStore? = nil) {
+        init(
+            session: DocumentSession,
+            libraryStore: LibraryStore? = nil,
+            reindex: (() -> Void)? = nil,
+            reportError: ((String) -> Void)? = nil
+        ) {
             self.session = session
             self.libraryStore = libraryStore
+            self.reindex = reindex
+            self.reportError = reportError
             #if DEBUG
             if UITestLaunchConfiguration.current.isEnabled {
                 aiController.providerFactory = { UITestAIProvider() }
@@ -165,7 +176,10 @@ struct EditorTextView: NSViewRepresentable {
             guard wikiLinkAutocomplete == nil else { return }
             let controller = WikiLinkAutocompleteController(
                 textView: textView,
-                store: libraryStore
+                store: libraryStore,
+                noteDirectory: { [weak self] in self?.session.fileURL.deletingLastPathComponent() },
+                reindex: reindex,
+                reportError: reportError
             )
             wikiLinkAutocomplete = controller
             textView.wikiLinkAutocompleteKeyHandler = { [weak controller] event in

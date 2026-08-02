@@ -88,6 +88,28 @@ final class EditorWorkflowUITests: UITestCase {
         )
     }
 
+    func testWikiLinkCreateNoteInsertsLinkAndCreatesFile() {
+        launch()
+        let editor = openFixtureNote()
+        editor.click()
+        editor.typeKey(.end, modifierFlags: [.command])
+        editor.typeKey(.enter, modifierFlags: [])
+        editor.typeKey(.enter, modifierFlags: [])
+        editor.typeText("[[Brand New Note")
+
+        let createRow = element(AccessibilityID.wikiLinkCreateNote)
+        XCTAssertTrue(createRow.waitForExistence(timeout: 5), createRow.debugDescription)
+        createRow.click()
+
+        XCTAssertTrue(
+            text(in: editor).contains("[[Brand New Note]]"),
+            editor.debugDescription
+        )
+
+        chooseSidebarItem("Notes")
+        XCTAssertTrue(file(named: "Brand New Note").waitForExistence(timeout: 10))
+    }
+
     func testStandaloneDocumentLaunch() {
         launch(standalone: true)
         XCTAssertTrue(

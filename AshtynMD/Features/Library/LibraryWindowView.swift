@@ -694,7 +694,9 @@ struct DocumentAreaView: View {
                 EditorContainerView(
                     session: session,
                     previewContext: previewContext(for: session),
-                    libraryStore: appModel.session.store
+                    libraryStore: appModel.session.store,
+                    reindex: { appModel.session.reindex() },
+                    reportError: { appModel.reportError($0) }
                 )
                 .id(session.id)
             } else {

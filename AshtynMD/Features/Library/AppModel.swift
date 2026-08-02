@@ -23,6 +23,11 @@ final class AppModel {
     private(set) var titleRename: TitleRenameCoordinator!
 
     private(set) var openError: String?
+
+    func reportError(_ message: String) {
+        openError = message
+    }
+
     private(set) var tagRewriteUndoAvailable = false
     /// Bumps when indexed files change so secondary surfaces can refresh
     /// actor-backed queries without polling.

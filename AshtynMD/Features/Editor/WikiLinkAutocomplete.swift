@@ -406,10 +406,22 @@ final class WikiLinkAutocompleteController: NSObject, NSPopoverDelegate {
     private weak var textView: PlainTextView?
     private var popover: NSPopover?
     private var isDismissing = false
+    private let noteDirectory: () -> URL?
+    private let reindex: (() -> Void)?
+    private let reportError: ((String) -> Void)?
 
-    init(textView: PlainTextView, store: LibraryStore?) {
+    init(
+        textView: PlainTextView,
+        store: LibraryStore?,
+        noteDirectory: @escaping () -> URL? = { nil },
+        reindex: (() -> Void)? = nil,
+        reportError: ((String) -> Void)? = nil
+    ) {
         model = WikiLinkAutocompleteModel(store: store)
         self.textView = textView
+        self.noteDirectory = noteDirectory
+        self.reindex = reindex
+        self.reportError = reportError
         super.init()
         model.onChange = { [weak self] in
             self?.modelDidChange()
@@ -451,30 +463,50 @@ final class WikiLinkAutocompleteController: NSObject, NSPopoverDelegate {
     }
 
     func acceptSelection() -> Bool {
-        // NOTE (Task 3 deviation, flagged for review): `selectedInsertion()`
-        // was removed as part of this task's Step 3 replacement (nothing else
-        // called it once the shim `selectedAction()` from Task 2 was
-        // replaced), but this call site — outside this task's brief, which
-        // only touches `WikiLinkAutocompleteModel` — still referenced it and
-        // would not compile otherwise. Mechanically switched to
-        // `selectedAction()` and unwrapped `.insertion` to preserve exactly
-        // the prior insertion behavior. The create-note side effect
-        // (`action.noteToCreate`) is intentionally left unused here — wiring
-        // it up is Task 5's job per this task's own Interfaces section
-        // ("Consumed by ... Task 5 (controller/create-note action)").
         guard let action = model.selectedAction(), let textView else { return false }
         let insertion = action.insertion
         dismiss()
+        // Bracket auto-pairing (PlainTextView.insertText) already leaves a
+        // closing "]]" after the caret in the common case of typing "[["
+        // fresh — but not when "[[" was typed immediately before other
+        // text, so auto-pairing didn't fire. Only append what's missing.
+        let replacement = hasClosingBrackets(after: insertion.range, in: textView)
+            ? insertion.replacement
+            : insertion.replacement + "]]"
         guard textView.applyExternalEdit(
             range: insertion.range,
-            replacement: insertion.replacement
+            replacement: replacement
         ) else {
             return false
         }
+        // `selectedRange` is computed from the title-only replacement, so it
+        // lands the caret right after the title regardless of whether "]]"
+        // was already present or just appended above.
         textView.setSelectedRange(insertion.selectedRange)
         textView.scrollRangeToVisible(insertion.selectedRange)
-        dismiss()
+        if let title = action.noteToCreate {
+            createNote(titled: title)
+        }
         return true
+    }
+
+    private func hasClosingBrackets(after range: NSRange, in textView: PlainTextView) -> Bool {
+        let content = textView.string as NSString
+        let closerRange = NSRange(location: NSMaxRange(range), length: 2)
+        guard closerRange.location + closerRange.length <= content.length else { return false }
+        return content.substring(with: closerRange) == "]]"
+    }
+
+    private func createNote(titled title: String) {
+        guard let folder = noteDirectory(),
+              let baseName = TitleFilename.sanitizedBaseName(title) else { return }
+        let url = LibraryBrowser.availableURL(in: folder, baseName: baseName, ext: "md")
+        do {
+            try SaveCoordinator.writeAtomically(Data("\(title)\n".utf8), to: url)
+            reindex?()
+        } catch {
+            reportError?("Couldn't create \u{201C}\(baseName).md\u{201D}: \(error.localizedDescription)")
+        }
     }
 
     @discardableResult
