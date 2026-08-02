@@ -89,16 +89,17 @@ popover's convention), and a per-request ID guard so a slow/stale lookup can
 never overwrite a newer query's results.
 
 Data source is entirely reused — no new `LibraryStore` methods:
-- Empty query → `LibraryStore.recents(limit:)` (existing), matching the
-  recents-before-typing convention Task 28's gap-closing work established for
-  wiki-link autocomplete.
+- Empty query → `LibraryStore.recents(limit: 30)` (existing, using its
+  standing default), matching the recents-before-typing convention Task 28's
+  gap-closing work established for wiki-link autocomplete.
 - Non-empty query → `LibraryStore.titleCandidates(limit: 500)` (existing)
   ranked by `FuzzyMatch.score(pattern:in:)` (existing) — the same DP matcher
   already proven against the "wr" → Wireframes/Work Retrospective ordering
   problem.
 
-Each result carries `FuzzyMatch.Score`'s matched-position ranges (for bolding
-matched characters in the title) plus a secondary line:
+Each result carries `FuzzyMatch.Score.ranges` (`[NSRange]`, UTF-16-based,
+already merged into runs by `FuzzyMatch`) for bolding matched characters in the
+title, plus a secondary line:
 `"#<primary tag> · edited <relative date>"`, falling back to `"Untagged"` —
 reusing the exact visual convention the wiki-link popover already uses, so the
 app's two fuzzy-pickers stay visually consistent.
