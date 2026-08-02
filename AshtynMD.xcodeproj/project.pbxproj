@@ -16,6 +16,7 @@
 		154E7B5311218A6B9E8FF3A7 /* MarkdownMaskIndex.swift in Sources */ = {isa = PBXBuildFile; fileRef = 322867C442E18155EAF1C535 /* MarkdownMaskIndex.swift */; };
 		1598E481BBC3A53297C32845 /* MarkdownTag.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E4C28DE629340D7A9C2A105 /* MarkdownTag.swift */; };
 		15AD08BFF13EDA7B1B6758C4 /* AccessibilityIdentifiers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3785C25D7634E68A107DD609 /* AccessibilityIdentifiers.swift */; };
+		190AAEC7A3183AACBBDFD3FA /* QuickOpenModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CE5C847AB8862AA346C864A /* QuickOpenModelTests.swift */; };
 		1A60F3E8016ABDEECFF9C952 /* DocumentInfoTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FF23EBA361738B31FC53ED8 /* DocumentInfoTests.swift */; };
 		1B73F58B3EC05D1DEEA069B8 /* AICompletionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 733F95269F57D7A91ECBAF43 /* AICompletionTests.swift */; };
 		1C6EE3B6EE50BD660E514294 /* MarkdownSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE53A9D471EB5B2F617F4BEF /* MarkdownSource.swift */; };
@@ -81,6 +82,7 @@
 		9A26D6FE9C8C753A7804AA23 /* InboxFolder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DF85ACF68A005E179AA0236 /* InboxFolder.swift */; };
 		9A8E2957EB578B5E06BEF79E /* MarkdownMetadataTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75013E8D806045E100F6EA9F /* MarkdownMetadataTests.swift */; };
 		9AA575D97D7B12F187048B32 /* DocumentSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA36B4EA3A9EA2F819C57943 /* DocumentSession.swift */; };
+		9B1D67BE9C15FBA35BD6ADDC /* QuickOpen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82D7E101E501D9D9CB1FF854 /* QuickOpen.swift */; };
 		9C2E43BBA52BE7C55A5D34CF /* LanguageDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B403CB2F3E6F9D22A98D03E /* LanguageDetector.swift */; };
 		A24F0D1BDF18768B33C2605C /* TreeSitterBash in Frameworks */ = {isa = PBXBuildFile; productRef = 4FDD9AC28CC6E2BAA08C9CF6 /* TreeSitterBash */; };
 		A3FE5994440192684DE64F96 /* MarkdownStyleScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E126F9315B8833D61E571DE /* MarkdownStyleScanner.swift */; };
@@ -170,6 +172,7 @@
 		150E8E060DA81D219228B16C /* tree-sitter-yaml */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "tree-sitter-yaml"; path = "Vendor/tree-sitter-yaml"; sourceTree = SOURCE_ROOT; };
 		171BF494F14B43AEBAB51058 /* AshtynMDUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AshtynMDUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		17F12C33A68500003A999CEA /* MarkdownTagTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownTagTests.swift; sourceTree = "<group>"; };
+		1CE5C847AB8862AA346C864A /* QuickOpenModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickOpenModelTests.swift; sourceTree = "<group>"; };
 		1F368E899BCD7B0E0241B043 /* TagInsertion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TagInsertion.swift; sourceTree = "<group>"; };
 		20A925195E28F3C0085315E8 /* AITypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AITypes.swift; sourceTree = "<group>"; };
 		21CE92566F3F737F0D900C13 /* LanguageDetectionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LanguageDetectionTests.swift; sourceTree = "<group>"; };
@@ -221,6 +224,7 @@
 		7CFECD285D9E4CAEA05F6910 /* SearchModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchModel.swift; sourceTree = "<group>"; };
 		7E126F9315B8833D61E571DE /* MarkdownStyleScanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownStyleScanner.swift; sourceTree = "<group>"; };
 		805DC81BF0C0EAD4C3562BD0 /* NoteInfoInspectorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoteInfoInspectorView.swift; sourceTree = "<group>"; };
+		82D7E101E501D9D9CB1FF854 /* QuickOpen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickOpen.swift; sourceTree = "<group>"; };
 		82ED3B99B30E2D894D7E0C9F /* LineNumberRulerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LineNumberRulerView.swift; sourceTree = "<group>"; };
 		839F849ED7BAFE00EDE7DAD1 /* MarkdownPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownPreviewView.swift; sourceTree = "<group>"; };
 		85AB492C4F7F265B216393DA /* EditorWorkflowUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorWorkflowUITests.swift; sourceTree = "<group>"; };
@@ -376,6 +380,7 @@
 				6EB4FFA7C9BA22933156E119 /* NoteActionsModel.swift */,
 				805DC81BF0C0EAD4C3562BD0 /* NoteInfoInspectorView.swift */,
 				591A0BBBB4682CB37D905173 /* NoteListModel.swift */,
+				82D7E101E501D9D9CB1FF854 /* QuickOpen.swift */,
 				7CFECD285D9E4CAEA05F6910 /* SearchModel.swift */,
 				AFCD768671C5CB96F60DDEAC /* SearchQuery.swift */,
 				70F51027C3430B122BE47DFA /* SearchSnippet.swift */,
@@ -414,6 +419,7 @@
 				AF126AD6841655DA512FDA82 /* MarkdownTransformTests.swift */,
 				E6C1DDCAFA9418BC1791B65E /* NoteLifecycleTests.swift */,
 				68E4A451F06DCC03919BB276 /* PerformanceGateTests.swift */,
+				1CE5C847AB8862AA346C864A /* QuickOpenModelTests.swift */,
 				364EFB5BDF182BF99381ACA0 /* SaveAndRecoveryTests.swift */,
 				027DBEF821DFD79A15FEDF9E /* SearchQueryTests.swift */,
 				EA977D21FAE1C264BEE3BA79 /* SearchSnippetTests.swift */,
@@ -822,6 +828,7 @@
 				90A74615F69053721684C4D0 /* PlainTextView+Markdown.swift in Sources */,
 				41E193F6EF3B641D3D3A7F93 /* PlainTextView.swift in Sources */,
 				DB492CDB1A2F4D94495A0FDF /* PreviewAssetSchemeHandler.swift in Sources */,
+				9B1D67BE9C15FBA35BD6ADDC /* QuickOpen.swift in Sources */,
 				BB3C823A8D86CB49F5347A2A /* RecoveryStore.swift in Sources */,
 				8718CD17A5F06CC087563804 /* SQLiteDatabase.swift in Sources */,
 				D8B194D5265E0FC18E3BA82D /* SaveCoordinator.swift in Sources */,
@@ -874,6 +881,7 @@
 				B26809E2C0F18E9DAD2075D9 /* MarkdownTransformTests.swift in Sources */,
 				C1B0CE885823663132ACA188 /* NoteLifecycleTests.swift in Sources */,
 				CBD6DB4CA38F698BB02244EA /* PerformanceGateTests.swift in Sources */,
+				190AAEC7A3183AACBBDFD3FA /* QuickOpenModelTests.swift in Sources */,
 				1DB30B413DA34314123EA963 /* SQLiteDatabaseTests.swift in Sources */,
 				856587FDF517707E598BC0DD /* SaveAndRecoveryTests.swift in Sources */,
 				BA55A324EA31BDC21BAEB568 /* SearchQueryTests.swift in Sources */,
