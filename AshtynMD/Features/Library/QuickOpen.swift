@@ -180,7 +180,15 @@ struct QuickOpenView: View {
                 .onSubmit(selectCurrent)
                 .accessibilityIdentifier(AccessibilityID.quickOpenField)
             Divider()
-            if model.results.isEmpty && !model.isLoading {
+            if model.isLoading && model.results.isEmpty {
+                // Covers the ~120ms debounce window after each keystroke, so
+                // the sheet doesn't visibly collapse to the empty state and
+                // re-grow on every keystroke. Mirrors
+                // `WikiLinkAutocompletePopoverView`'s equivalent branch.
+                ProgressView("Searching notes…")
+                    .controlSize(.small)
+                    .padding(12)
+            } else if model.results.isEmpty {
                 Text(model.query.isEmpty ? "No recent notes" : "No matching notes")
                     .font(.callout)
                     .foregroundStyle(.secondary)

@@ -1,14 +1,16 @@
 import SwiftUI
 
-/// Wraps a `QuickOpenModel` so `.sheet(item:)` can own its lifetime. Plain
-/// `.sheet(isPresented:)` plus a *separate* `@State` model was tried first,
-/// but SwiftUI can present that sheet's content closure using a snapshot
-/// from just before both `@State` writes landed, evaluating the closure with
-/// the model still `nil` even though it was set moments earlier in the same
-/// handler — the two pieces of state were not atomic from the sheet's point
-/// of view. Folding presence and content into one `Identifiable` value that
-/// `.sheet(item:)` binds to removes that race: there is no longer a "started
-/// presenting" flag that can disagree with "which model to show."
+/// Wraps a `QuickOpenModel` so `.sheet(item:)` can own its lifetime. The bug
+/// this fixes (commit `c833d30`): the model used to be constructed *inline*
+/// inside the `.sheet` content closure (`QuickOpenModel(store:
+/// appModel.session.store)` right there in the view builder). SwiftUI
+/// re-invokes that closure on every re-render while the sheet is visible, so
+/// a fresh, empty `QuickOpenModel` — discarding whatever query the user had
+/// already typed — was created on practically every keystroke. Building the
+/// model once, up front, and carrying it inside an `Identifiable` value that
+/// `.sheet(item:)` binds to means the closure only ever reads `item.model`;
+/// it never constructs one, so there is nothing left for a re-render to
+/// throw away.
 private struct QuickOpenSheetItem: Identifiable {
     let id = UUID()
     let model: QuickOpenModel
