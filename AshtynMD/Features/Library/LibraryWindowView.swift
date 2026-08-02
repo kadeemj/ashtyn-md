@@ -629,9 +629,8 @@ struct SearchColumnView: View {
                     Text(result.record.title.isEmpty ? result.record.name : result.record.title)
                         .font(.body)
                         .lineLimit(1)
-                    Text(plainSnippet(result.snippet))
+                    highlightedSnippet(result.snippet)
                         .font(.caption)
-                        .foregroundStyle(.secondary)
                         .lineLimit(2)
                     Text(result.record.relativePath)
                         .font(.caption2)
@@ -643,7 +642,7 @@ struct SearchColumnView: View {
                 .accessibilityLabel(
                     result.record.title.isEmpty ? result.record.name : result.record.title
                 )
-                .accessibilityValue(plainSnippet(result.snippet))
+                .accessibilityValue(plainSnippetText(result.snippet))
             }
             .accessibilityIdentifier(AccessibilityID.searchResults)
             .overlay {
@@ -656,12 +655,17 @@ struct SearchColumnView: View {
         .onAppear { searchFieldFocused = true }
     }
 
-    /// Gate 5 renders these delimiters as real highlight; for now they are
-    /// stripped so the snippet reads cleanly.
-    private func plainSnippet(_ snippet: String) -> String {
-        snippet
-            .replacingOccurrences(of: "⟦", with: "")
-            .replacingOccurrences(of: "⟧", with: "")
+    private func highlightedSnippet(_ snippet: String) -> Text {
+        SearchSnippet.segments(from: snippet).reduce(Text("")) { partial, segment in
+            let piece = segment.isHighlighted
+                ? Text(segment.text).fontWeight(.semibold).foregroundStyle(.primary)
+                : Text(segment.text).foregroundStyle(.secondary)
+            return partial + piece
+        }
+    }
+
+    private func plainSnippetText(_ snippet: String) -> String {
+        SearchSnippet.segments(from: snippet).map(\.text).joined()
     }
 
     private var selectionBinding: Binding<String?> {
